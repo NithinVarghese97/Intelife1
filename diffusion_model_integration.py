@@ -56,6 +56,7 @@ def generate_images_from_prompts(dall_e_api_key):
     return images
 
 # Example usage
+API_KEY="Your API Key"
 generated_images = generate_images_from_prompts(API_KEY)
 
 # Each entry in generated_images will contain the section text and the corresponding image URL
