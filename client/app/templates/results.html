@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Conversion Results</h1>
+    {% if results %}
+        <div class="list-group">
+            {% for result in results %}
+                <div class="list-group-item">
+                    <p>{{ result }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No results found.</p>
+    {% endif %}
+    <a href="/" class="btn btn-primary mt-4">Upload Another PDF</a>
+</div>
+{% endblock %}

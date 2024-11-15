@@ -1,9 +1,7 @@
 .env
 embeddings.csv
-processed/scraped.csv
-text/output.txt
-training_data.jsonl
-validation_data.jsonl
+**/processed/scraped.csv
+**/text/output.txt
 
 # Byte-compiled / optimized / DLL files
 **/__pycache__/

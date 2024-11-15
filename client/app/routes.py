@@ -1,6 +1,7 @@
 from app import app
 from flask import render_template, request, jsonify
 from app.forms import PDFUploadForm
+from app.converter import convert
 import os
 
 @app.route('/', methods=['GET', 'POST'])
@@ -21,6 +22,8 @@ def upload():
         pdf_file_path = os.path.join(files_dir, pdf_file.filename)
         pdf_file.save(pdf_file_path)
 
-        return jsonify({'success': True})
+        results = convert(pdf_file_path)
+
+        return render_template('results.html', results=results)
 
     return render_template('upload.html', form=form)

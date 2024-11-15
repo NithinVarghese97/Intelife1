@@ -57,7 +57,7 @@ def create_context(input, df, max_len=1800, size="ada"):
 def conversion(df, model="gpt-3.5-turbo", input="", condition_prompt='', max_len=1800, size="ada", debug=False, max_tokens=100, stop_sequence=None):
     context = create_context(input, df, max_len=max_len, size=size)
     
-    with open('prompts.jsonl', 'r') as file:
+    with open('app/prompts.jsonl', 'r') as file:
         data = json.load(file)
 
     # Create the messages list
@@ -106,10 +106,10 @@ def create_df():
     texts = []
 
     # Get all the text files in the text directory
-    for file in os.listdir("text/"):
+    for file in os.listdir("app/text/"):
 
         # Open the file and read the text
-        with open("text/" + file, "r", encoding="UTF-8") as f:
+        with open("app/text/" + file, "r", encoding="UTF-8") as f:
             text = f.read()
 
             # Omit the first 11 lines and the last 4 lines, then replace -, _, and #update with spaces.
@@ -130,7 +130,7 @@ def create_df():
 def Wrapper(input, condition_prompt, model_id=None):
     model = None
     if model_id == None:
-        model = fine_tune('training_data.jsonl', 'validation_data.jsonl')
+        model = fine_tune('app/training_data.jsonl', 'app/validation_data.jsonl')
     else:
         model = model_id
 
