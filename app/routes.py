@@ -11,6 +11,7 @@ def upload():
     if request.method == 'POST' and form.validate_on_submit():
         # Get the uploaded PDF file
         pdf_file = request.files['pdf_file']
+        api_key = request.form['api_key']
 
         print("PDF FILE: ", pdf_file)
         # Ensure the /files directory exists
@@ -22,7 +23,7 @@ def upload():
         pdf_file_path = os.path.join(files_dir, pdf_file.filename)
         pdf_file.save(pdf_file_path)
 
-        results = convert(pdf_file_path)
+        results = convert(pdf_file_path, )
 
         return render_template('results.html', results=results)
 
