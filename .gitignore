@@ -4,3 +4,4 @@ processed/scraped.csv
 text/output.txt
 training_data.jsonl
 validation_data.jsonl
+output.pdf
