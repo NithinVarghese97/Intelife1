@@ -23,7 +23,10 @@ def upload():
         pdf_file_path = os.path.join(files_dir, pdf_file.filename)
         pdf_file.save(pdf_file_path)
 
-        results = convert(pdf_file_path, )
+        results = convert(pdf_file_path, api_key)
+
+        # Remove the uploaded PDF file after processing
+        os.remove(pdf_file_path)
 
         return render_template('results.html', results=results)
 
