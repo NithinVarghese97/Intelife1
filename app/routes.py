@@ -2,6 +2,7 @@ from app import app
 from flask import render_template, request, jsonify
 from app.forms import PDFUploadForm
 from app.converter import convert
+from generate_images import generate_images_from_prompts  # Import your function
 import os
 
 @app.route('/', methods=['GET', 'POST'])
@@ -12,7 +13,6 @@ def upload():
         # Get the uploaded PDF file
         pdf_file = request.files['pdf_file']
 
-        print("PDF FILE: ", pdf_file)
         # Ensure the /files directory exists
         files_dir = os.path.join(os.path.dirname(__file__), 'files')
         if not os.path.exists(files_dir):
@@ -22,11 +22,16 @@ def upload():
         pdf_file_path = os.path.join(files_dir, pdf_file.filename)
         pdf_file.save(pdf_file_path)
 
+        # Process the PDF and get results
         results = convert(pdf_file_path)
 
         # Remove the uploaded PDF file after processing
         os.remove(pdf_file_path)
         
-        return render_template('results.html', results=results)
+        # Generate images using the results as prompts
+        generated_images = generate_images_from_prompts(results)
+
+        # Pass both results and generated image paths to the template
+        return render_template('results.html', results=results, images=generated_images)
 
     return render_template('upload.html', form=form)
