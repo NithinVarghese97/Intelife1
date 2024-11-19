@@ -19,15 +19,28 @@ if not os.path.isdir(image_dir):
 # Print the directory to save to
 print(f"{image_dir=}")
 
+# Function to apply prompt engineering
+def engineer_prompt(base_prompt):
+    # General instructions for the prompts
+    general_instructions = (
+        "A clean, minimalistic image with no text, no labels, and no clutter. Focus on the subject only, with a plain background and simple details.",
+        "No text, no captions, no labels, no signage, and no writing anywhere in the image."
+    )
+    # Combine the general instructions with the specific prompt
+    return f"{general_instructions[0]} {base_prompt}{general_instructions[1]}"
+
 # Function to generate images from a list of prompts
 def generate_images_from_prompts(prompts):
     images = []
 
-    for i, prompt in enumerate(prompts):
+    for i, base_prompt in enumerate(prompts):
+        # Engineer the prompt
+        engineered_prompt = engineer_prompt(base_prompt)
 
+        # Generate the image using the OpenAI API
         generation_response = client.images.generate(
             model="dall-e-3",
-            prompt=prompt,
+            prompt=engineered_prompt,
             n=1,
             size="1024x1024",
             response_format="url",
@@ -50,6 +63,6 @@ def generate_images_from_prompts(prompts):
         # Save the resized image
         img.save(generated_image_filepath)
         
-        images.append((prompt, generated_image_filepath))
+        images.append((engineered_prompt, generated_image_filepath))
 
     return images
