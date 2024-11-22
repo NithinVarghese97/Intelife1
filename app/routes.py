@@ -3,6 +3,7 @@ from flask import render_template, request, jsonify
 from app.forms import PDFUploadForm
 from app.converter import convert
 from generate_images import generate_images_from_prompts  # Import your function
+from pdf_generation import compile_info_for_pdf
 import os
 
 @app.route('/', methods=['GET', 'POST'])
@@ -30,7 +31,10 @@ def upload():
         
         # Generate images using the results as prompts
         generated_images = generate_images_from_prompts(results)
-
+        
+        # Compile and generate the PDF
+        compile_info_for_pdf(results, generated_images)
+        
         # Pass both results and generated image paths to the template
         return render_template('results.html', results=results, images=generated_images)
 
