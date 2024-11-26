@@ -14,8 +14,10 @@
                 <!-- Dynamically display the correct image based on current_page -->
                 <img id="pdfImage" src="static/pdf2image/pdf_page_{{ current_page }}.jpg" alt="PDF Page">
                 <div class="navigation">
-                    <button id="prevButton" onclick="navigatePage(-1)">←</button>
-                    <button id="nextButton" onclick="navigatePage(1)">→</button>
+                    <div class="navigation">
+                        <button id="prevButton" onclick="navigatePage(-1)" {% if current_page == 1 %}disabled{% endif %}>←</button>
+                        <button id="nextButton" onclick="navigatePage(1)" {% if current_page == total_pages %}disabled{% endif %}>→</button>
+                    </div>
                 </div>
             </div>
         </div>        
@@ -33,7 +35,11 @@
                 </div>
                 {% endfor %}
                 
+                <!-- Save Changes Button -->
                 <button type="submit" class="save-button">Save Changes</button>
+
+                <!-- Download PDF Button -->
+                <button type="button" class="download-button" onclick="downloadPDF()">Download PDF</button>
             </form>
         </div>
 
@@ -64,6 +70,11 @@
                 document.querySelectorAll('textarea').forEach(adjustHeight);
             }
 
+            // Function to download the PDF
+            function downloadPDF() {
+                window.location.href = '/download-pdf';
+            }
+            
             // Attach the adjustHeight function to the 'input' event for each textarea
             document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('textarea').forEach(textArea => {

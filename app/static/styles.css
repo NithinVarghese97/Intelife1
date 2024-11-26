@@ -122,3 +122,18 @@ button.save-button {
 button.save-button:hover {
     background-color: #3e7040;
 }
+
+button.download-button {
+    margin-left: 10px; /* Add some space to the left */
+    margin-top: 5px; /* Add some space to the top */
+    padding: 25px 45px;
+    font-size: 16px;
+    background-color: #007BFF; /* Blue background for the download button */
+    color: white; /* White text */
+    border-radius: 5px;
+    cursor: pointer; /* Pointer cursor */
+}
+
+button.download-button:hover {
+    background-color: #0056b3;
+}

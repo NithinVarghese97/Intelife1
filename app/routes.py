@@ -1,5 +1,5 @@
 from app import app
-from flask import render_template, request, redirect
+from flask import render_template, request, redirect, send_file
 from app.forms import PDFUploadForm
 from app.converter import convert
 from generate_images import generate_images_from_prompts
@@ -89,3 +89,8 @@ def submit():
 
     # Redirect back to the same page
     return redirect(f"/index?page={page}")
+
+@app.route('/download-pdf')
+def download_pdf():
+    pdf_path = "static/pdf/output.pdf"  # Update this to match your PDF file's location
+    return send_file(pdf_path, as_attachment=True, download_name="output.pdf")
