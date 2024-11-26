@@ -10,20 +10,21 @@ from umap import UMAP
 # BERTopic author's words: https://towardsdatascience.com/topic-modeling-with-bert-779f7db187e6
 # Documentation: https://maartengr.github.io/BERTopic/index.html
 
+def cluster_sentences(sentences):
+    topics, _, topic_model = create_BERTopic_model(sentences)
+    
+    groups = {p: [] for p in topics}
+    for sentence in sentences:
+        prediction = topic_model.transform(sentence)
+        groups[prediction[0][0]] = groups[prediction[0][0]] + [sentence]
+    
+    # Remove outliers (topic = -1 is "outliers" topic, see BERTopic documentation)
+    groups = {k: v for k, v in groups.items() if k != -1}
+    groups = list(groups.values())
+
+    return groups
+
 def create_BERTopic_model(sentences, min_topic_size=5, n_neighbors=5):
-    """
-    Cluster similar sentences using BERTopic.
-    
-    Parameters:
-    sentences (list): List of sentences to cluster
-    min_topic_size (int): Minimum number of sentences in a cluster
-    n_neighbors (int): Number of neighbors for UMAP dimensionality reduction
-    
-    Returns:
-    topics (list): Topic number for each sentence
-    probs (array): Topic probability distributions
-    model (BERTopic): Trained BERTopic model
-    """
     # Sentence embeddings using SentenceTransformer
     sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
     embeddings = sentence_model.encode(sentences, show_progress_bar=False)
@@ -31,7 +32,7 @@ def create_BERTopic_model(sentences, min_topic_size=5, n_neighbors=5):
 
     vectorizer_model = CountVectorizer(stop_words="english", min_df=2, ngram_range=(1, 2))
     
-    # UMAP model for dimensionality reduction
+    # UMAP model
     umap_model = UMAP(
         n_neighbors=n_neighbors,
         n_components=5,
@@ -63,17 +64,3 @@ def create_BERTopic_model(sentences, min_topic_size=5, n_neighbors=5):
             interpretation.append("/".join([word[0] for word in words[:5]]))
     
     return topics, interpretation, topic_model
-
-def cluster_sentences(sentences):
-    topics, _, topic_model = create_BERTopic_model(sentences)
-    
-    groups = {p: [] for p in topics}
-    for sentence in sentences:
-        prediction = topic_model.transform(sentence)
-        groups[prediction[0][0]] = groups[prediction[0][0]] + [sentence]
-    
-    # Remove outliers (topic = -1 is "outliers" topic, see BERTopic documentation)
-    groups = {k: v for k, v in groups.items() if k != -1}
-    groups = list(groups.values())
-
-    return groups
