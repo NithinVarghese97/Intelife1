@@ -16,9 +16,6 @@ image_dir = "app/static/images"
 if not os.path.isdir(image_dir):
     os.mkdir(image_dir)
 
-# Print the directory to save to
-print(f"{image_dir=}")
-
 # Function to apply prompt engineering
 def engineer_prompt(base_prompt):
     # General instructions for the prompts
@@ -57,7 +54,7 @@ def generate_images_from_prompts(prompts):
         img = img.resize((512, 512), Image.LANCZOS)
 
         # Define a unique name for each generated image
-        generated_image_name = f"section_{i}.png"
+        generated_image_name = f"section_{i}.jpg"
         generated_image_filepath = os.path.join(image_dir, generated_image_name)
 
         # Save the resized image

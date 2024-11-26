@@ -1,4 +1,7 @@
 import fitz
+import os 
+from pdf2image import convert_from_path
+
 def replace_pdf_text(input_pdf_path, output_pdf_path, body_text_locations, new_texts):
     doc = fitz.open(input_pdf_path)
     
@@ -226,5 +229,60 @@ def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]]):
     for i in range(len(text)):
         all_groups.append([image_paths[i][1], text[i]])
         
-        # Generate the PDF with the sample data
-        generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page)
+    # Generate the PDF with the sample data
+    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page)
+    generate_all_images(output_path, OUTPUT_DIR)
+    TOTAL_PAGES = get_page_count(output_path)
+    page_text_boxes = populate_text_boxes(TOTAL_PAGES, text)
+    return TOTAL_PAGES, page_text_boxes
+        
+        
+
+
+# Constants for PDF processing
+PDF_PATH = "app/static/pdf/output.pdf"
+OUTPUT_DIR = "app/static/pdf2image"
+
+def get_page_count(pdf_file):
+    """
+    Returns the total number of pages in the PDF file.
+    """
+    doc = fitz.open(pdf_file)  # Open the PDF document
+    page_count = len(doc)  # Get the number of pages
+    doc.close()  # Close the document
+    return page_count
+
+def populate_text_boxes(total_pages, results):
+    # Initialize the page_text_boxes dictionary with empty dictionaries
+    page_text_boxes = {page: {} for page in range(1, total_pages + 1)}
+    
+    # Use an iterator to assign results to boxes
+    result_iterator = iter(results)
+    
+    # Loop through each page
+    for page in range(1, total_pages + 1):
+        # Assign a maximum of 3 boxes per page
+        for box_num in range(1, 5):
+            try:
+                # Assign the next result to the current box
+                text = next(result_iterator)
+                page_text_boxes[page][f"box{box_num}"] = text
+            except StopIteration:
+                # If results are exhausted, return the dictionary
+                return page_text_boxes
+    
+    return page_text_boxes
+
+def generate_all_images(pdf_path, output_dir):
+    """
+    Converts all pages of the PDF into images and saves them in the output directory.
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Convert all pages of the PDF into images
+    images = convert_from_path(pdf_path, dpi=200)
+    for i, image in enumerate(images, start=1):
+        output_path = os.path.join(output_dir, f"pdf_page_{i}.jpg")
+        image.save(output_path, "JPEG")
+        print(f"Saved: {output_path}")
