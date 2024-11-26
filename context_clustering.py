@@ -1,123 +1,79 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+from bertopic import BERTopic
+from sklearn.preprocessing import normalize
 from sentence_transformers import SentenceTransformer
-from sklearn.cluster import DBSCAN
-from sklearn.metrics import pairwise_distances
-import gensim
-from gensim.corpora import Dictionary
-from gensim.models import CoherenceModel
+from sklearn.feature_extraction.text import CountVectorizer
+from umap import UMAP
 
+# Resources:
+# Topic modelling in general: https://medium.com/@m.nath/topic-modeling-algorithms-b7f97cec6005
+# BERTopic author's words: https://towardsdatascience.com/topic-modeling-with-bert-779f7db187e6
+# Documentation: https://maartengr.github.io/BERTopic/index.html
 
-def compute_coherence_values(dictionary, corpus, texts, limit, start=2, step=3):
+def create_BERTopic_model(sentences, min_topic_size=5, n_neighbors=5):
     """
-    Compute c_v coherence for various number of topics
-
-    Args:
-    dictionary : Gensim dictionary
-    corpus : Gensim corpus
-    texts : List of input texts
-    limit : Max num of topics
-
-    Returns:
-    model_list : List of LDA topic models
-    coherence_values : Coherence values corresponding to the LDA model with respective number of topics
-    """
-    coherence_values = []
-    model_list = []
-    for num_topics in range(start, limit, step):
-        model = gensim.models.LdaMulticore(corpus=corpus, num_topics=num_topics, id2word=dictionary)
-        model_list.append(model)
-        coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
-        coherence_values.append(coherencemodel.get_coherence())
-
-    return model_list, coherence_values
-
-
-def group_similar_paragraphs_lda_dynamic(paragraphs, max_topics=11, min_topics=5, step=3):
-    """
-    Groups similar paragraphs using Latent Dirichlet Allocation (LDA) with dynamic topic selection.
+    Cluster similar sentences using BERTopic.
     
-    Args:
-    paragraphs (list): List of paragraph strings to be grouped.
-    max_topics (int): Maximum number of topics to consider.
-    min_topics (int): Minimum number of topics to consider.
-    step (int): Step size for topic number range.
-    random_state (int): Random state for reproducibility.
+    Parameters:
+    sentences (list): List of sentences to cluster
+    min_topic_size (int): Minimum number of sentences in a cluster
+    n_neighbors (int): Number of neighbors for UMAP dimensionality reduction
     
     Returns:
-    list: List of grouped paragraphs, where each group is a list of paragraphs assigned to the same topic.
+    topics (list): Topic number for each sentence
+    probs (array): Topic probability distributions
+    model (BERTopic): Trained BERTopic model
     """
-    # Tokenize the paragraphs
-    tokenized_paragraphs = [paragraph.split() for paragraph in paragraphs]
-    
-    # Create a dictionary representation of the documents.
-    dictionary = Dictionary(tokenized_paragraphs)
-    
-    # Create corpus
-    corpus = [dictionary.doc2bow(text) for text in tokenized_paragraphs]
-    
-    # Compute coherence values
-    model_list, coherence_values = compute_coherence_values(dictionary=dictionary, corpus=corpus, 
-                                                            texts=tokenized_paragraphs, 
-                                                            start=min_topics, limit=max_topics, step=step)
-    
-    # Get the model with the highest coherence score
-    optimal_model = model_list[coherence_values.index(max(coherence_values))]
-    optimal_num_topics = optimal_model.num_topics
-    
-    print(f"Optimal number of topics: {optimal_num_topics}")
-    
-    # Use the optimal model to get topic assignments
-    topic_assignments = [optimal_model.get_document_topics(doc) for doc in corpus]
-    
-    # Assign each paragraph to the most probable topic
-    paragraph_topics = [max(topics, key=lambda x: x[1])[0] for topics in topic_assignments]
-    
-    # Group paragraphs based on assigned topics
-    grouped_paragraphs = [[] for _ in range(optimal_num_topics)]
-    for idx, topic in enumerate(paragraph_topics):
-        grouped_paragraphs[topic].append(paragraphs[idx])
-    
-    # Remove empty groups and sort by size (largest first)
-    grouped_paragraphs = [group for group in grouped_paragraphs if group]
-    grouped_paragraphs.sort(key=len, reverse=True)
-    
-    return grouped_paragraphs
+    # Sentence embeddings using SentenceTransformer
+    sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+    embeddings = sentence_model.encode(sentences, show_progress_bar=False)
+    embeddings = normalize(embeddings)
 
+    vectorizer_model = CountVectorizer(stop_words="english", min_df=2, ngram_range=(1, 2))
+    
+    # UMAP model for dimensionality reduction
+    umap_model = UMAP(
+        n_neighbors=n_neighbors,
+        n_components=5,
+        min_dist=0.0,
+        metric='cosine',
+        random_state=42
+    )
+    
+    # Initialize BERTopic model
+    topic_model = BERTopic(
+        embedding_model=sentence_model,
+        vectorizer_model=vectorizer_model,
+        umap_model=umap_model,
+        min_topic_size=min_topic_size,
+        nr_topics=20,
+        top_n_words=10
+    )
 
-def group_similar_paragraphs_dbscan(paragraphs, eps=0.5, min_samples=5, use_transformer=False):
-    """
-    Groups similar paragraphs using DBSCAN clustering based on cosine similarity of their text embeddings.
+    # Train BERTopic model
+    topics, probs = topic_model.fit_transform(sentences, embeddings)
+
+    print(topic_model.get_topic_info())
+
+    # Interpretation of topics (top 5 words)
+    interpretation = []
+    for topic in set(topics):
+        words = topic_model.get_topic(topic)
+        if words:
+            interpretation.append("/".join([word[0] for word in words[:5]]))
     
-    Args:
-    paragraphs (list): List of paragraph strings to be grouped.
-    eps (float): The maximum distance between two samples for one to be considered as in the neighborhood of the other.
-    min_samples (int): The number of samples in a neighborhood for a point to be considered as a core point.
-    use_transformer (bool): If True, use SentenceTransformer for embeddings. If False, use TF-IDF.
+    return topics, interpretation, topic_model
+
+def cluster_sentences(sentences):
+    topics, _, topic_model = create_BERTopic_model(sentences)
     
-    Returns:
-    list: List of grouped paragraphs, where each group is a list of similar paragraphs.
-    """
-    if use_transformer:
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        embeddings = model.encode(paragraphs)
-    else:
-        vectorizer = TfidfVectorizer()
-        embeddings = vectorizer.fit_transform(paragraphs).toarray()
+    groups = {p: [] for p in topics}
+    for sentence in sentences:
+        prediction = topic_model.transform(sentence)
+        groups[prediction[0][0]] = groups[prediction[0][0]] + [sentence]
     
-    # Compute distance matrix
-    distances = pairwise_distances(embeddings, metric='cosine')
-    
-    # Perform DBSCAN clustering
-    dbscan = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed') # Need experimenting
-    cluster_labels = dbscan.fit_predict(distances)
-    
-    # Group paragraphs based on cluster labels
-    groups = {}
-    for i, label in enumerate(cluster_labels):
-        if label not in groups:
-            groups[label] = []
-        groups[label].append(paragraphs[i])
-    
-    # Sort groups by size (largest first) and remove noise points (label -1)
-    sorted_groups = sorted(groups.items(), key=lambda x: len(x[1]), reverse=True)
-    return [group for label, group in sorted_groups if label != -1]
+    # Remove outliers (topic = -1 is "outliers" topic, see BERTopic documentation)
+    groups = {k: v for k, v in groups.items() if k != -1}
+    groups = list(groups.values())
+
+    return groups
