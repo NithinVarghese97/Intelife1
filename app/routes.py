@@ -1,7 +1,7 @@
 from app import app
 from flask import render_template, request, jsonify
 from app.forms import PDFUploadForm
-from app.converter import convert
+from app.summariser import summarise
 from generate_images import generate_images_from_prompts  # Import your function
 from pdf_generation import compile_info_for_pdf
 import os
@@ -24,7 +24,7 @@ def upload():
         pdf_file.save(pdf_file_path)
 
         # Process the PDF and get results
-        results = convert(pdf_file_path)
+        results = summarise(pdf_file_path)
 
         # Remove the uploaded PDF file after processing
         os.remove(pdf_file_path)
