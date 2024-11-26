@@ -3,7 +3,8 @@ from flask import render_template, request, redirect
 from app.forms import PDFUploadForm
 from app.converter import convert
 from generate_images import generate_images_from_prompts
-from pdf_generation import compile_info_for_pdf
+from pdf_generation import compile_info_for_pdf, update_text, caller
+
 import os
 
 @app.route('/', methods=['GET', 'POST'])
@@ -44,11 +45,14 @@ page_text_boxes = None
 
 @app.route('/index')
 def index():
-    global TOTAL_PAGES, page_text_boxes
+    global TOTAL_PAGES, page_text_boxes, all_groups, mapping
 
     # Check if TOTAL_PAGES and page_text_boxes are already set
     if TOTAL_PAGES is None or page_text_boxes is None:
-        TOTAL_PAGES, page_text_boxes = compile_info_for_pdf(results, generated_images)
+        TOTAL_PAGES, page_text_boxes, all_groups, mapping = compile_info_for_pdf(results, generated_images)
+    
+    else:
+        TOTAL_PAGES = caller(all_groups)
 
     # Get the current page from the query parameters (default to 1)
     page = int(request.args.get('page', 1))
@@ -77,7 +81,7 @@ def submit():
     # Update the text box content for the current page
     for key, value in request.form.items():
         if key.startswith('box'):  # Only update keys that start with 'box'
-            page_text_boxes[page][key] = value
+            update_text(all_groups, page_text_boxes, mapping, page, key, value)
 
     # Debugging: Print the updated page content to the console
     print(f"Updated Text Boxes for Page {page}:", page_text_boxes[page])

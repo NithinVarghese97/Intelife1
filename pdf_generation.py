@@ -224,6 +224,10 @@ all_groups = [
 # Different templates would be different groups_per_page.
 groups_per_page = 4
 
+# Constants for PDF processing
+PDF_PATH = "app/static/pdf/output.pdf"
+OUTPUT_DIR = "app/static/pdf2image"
+
 def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]]):
     all_groups = []
     for i in range(len(text)):
@@ -234,14 +238,38 @@ def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]]):
     generate_all_images(output_path, OUTPUT_DIR)
     TOTAL_PAGES = get_page_count(output_path)
     page_text_boxes = populate_text_boxes(TOTAL_PAGES, text)
-    return TOTAL_PAGES, page_text_boxes
-        
-        
+    
+    # Create a mapping between `page_text_boxes` and `all_groups`
+    mapping = {}
 
-
-# Constants for PDF processing
-PDF_PATH = "app/static/pdf/output.pdf"
-OUTPUT_DIR = "app/static/pdf2image"
+    # Initialize mapping in order
+    list_index = 0
+    for page, boxes in page_text_boxes.items():
+        for box in boxes.keys():
+            if list_index < len(all_groups):
+                mapping[(page, box)] = list_index
+                list_index += 1
+    
+    
+    return TOTAL_PAGES, page_text_boxes, all_groups, mapping
+        
+def caller(text):
+    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, text, groups_per_page)
+    generate_all_images(output_path, OUTPUT_DIR)
+    TOTAL_PAGES = get_page_count(output_path)
+    
+    return TOTAL_PAGES
+    
+# Function to update text in both dictionary and list
+def update_text(l, d, map, page, box, new_text):
+    # Update the dictionary
+    if page in d and box in d[page]:
+        d[page][box] = new_text
+        
+        # Update the corresponding list
+        list_index = map.get((page, box))
+        if list_index is not None:
+            l[list_index][1] = new_text
 
 def get_page_count(pdf_file):
     """
