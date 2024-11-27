@@ -80,7 +80,7 @@ button:disabled {
     flex: 1;
     background-color: #eaeaea;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Stack text boxes vertically */
     justify-content: space-evenly; /* Space text boxes evenly */
     align-items: flex-start; /* Align text boxes to the left */
     padding: 10px;

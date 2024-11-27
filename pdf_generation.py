@@ -159,7 +159,7 @@ def add_groups(page, groups, num_groups, max_height):
             fitz.Rect(
                 text_x,
                 text_y,
-                page.rect.width - MARGIN_SIDES - 10,
+                page.rect.width - MARGIN_SIDES,
                 text_y + group_height + 5
             ),
             group_text,
@@ -228,16 +228,16 @@ groups_per_page = 4
 PDF_PATH = "app/static/pdf/output.pdf"
 OUTPUT_DIR = "app/static/pdf2image"
 
-def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]]):
+def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]], template: int = 3):
     all_groups = []
     for i in range(len(text)):
         all_groups.append([image_paths[i][1], text[i]])
         
     # Generate the PDF with the sample data
-    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page)
+    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, template)
     generate_all_images(output_path, OUTPUT_DIR)
     TOTAL_PAGES = get_page_count(output_path)
-    page_text_boxes = populate_text_boxes(TOTAL_PAGES, text)
+    page_text_boxes = populate_text_boxes(TOTAL_PAGES, text, template)
     
     # Create a mapping between `page_text_boxes` and `all_groups`
     mapping = {}
@@ -253,12 +253,17 @@ def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]]):
     
     return TOTAL_PAGES, page_text_boxes, all_groups, mapping
         
-def caller(text):
-    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, text, groups_per_page)
+def caller(text, template):
+    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, text, template)
     generate_all_images(output_path, OUTPUT_DIR)
     TOTAL_PAGES = get_page_count(output_path)
     
-    return TOTAL_PAGES
+    temp = []
+    for i in text:
+        temp.append(i[1])
+    page_text_boxes = populate_text_boxes(TOTAL_PAGES, temp, template)
+    
+    return TOTAL_PAGES, page_text_boxes
     
 # Function to update text in both dictionary and list
 def update_text(l, d, map, page, box, new_text):
@@ -280,7 +285,7 @@ def get_page_count(pdf_file):
     doc.close()  # Close the document
     return page_count
 
-def populate_text_boxes(total_pages, results):
+def populate_text_boxes(total_pages, results, template):
     # Initialize the page_text_boxes dictionary with empty dictionaries
     page_text_boxes = {page: {} for page in range(1, total_pages + 1)}
     
@@ -289,8 +294,8 @@ def populate_text_boxes(total_pages, results):
     
     # Loop through each page
     for page in range(1, total_pages + 1):
-        # Assign a maximum of 3 boxes per page
-        for box_num in range(1, 5):
+        # Assign a maximum of 3 or 4 boxes per page depending on the template
+        for box_num in range(1, template + 1):
             try:
                 # Assign the next result to the current box
                 text = next(result_iterator)
@@ -298,7 +303,7 @@ def populate_text_boxes(total_pages, results):
             except StopIteration:
                 # If results are exhausted, return the dictionary
                 return page_text_boxes
-    
+    print(page_text_boxes)
     return page_text_boxes
 
 def generate_all_images(pdf_path, output_dir):

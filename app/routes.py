@@ -36,23 +36,38 @@ def upload():
         generated_images = generate_images_from_prompts(results)
         
         # Pass both results and generated image paths to the template
-        return redirect('/index')
+        return redirect('/choose-template')
 
     return render_template('upload.html', form=form)
 
+@app.route('/choose-template', methods=['GET', 'POST'])
+def choose_template():
+    if request.method == 'POST':
+        # Get the selected option from the form
+        selected_option = request.form.get('option', '3')  # Default to 3 if no selection
+        return redirect(f'/display?template={selected_option}')
+
+    return render_template('templates.html')
+
+
 TOTAL_PAGES = None
 page_text_boxes = None
+template = None
 
-@app.route('/index')
-def index():
-    global TOTAL_PAGES, page_text_boxes, all_groups, mapping
+@app.route('/display')
+def display():
+    global TOTAL_PAGES, page_text_boxes, all_groups, mapping, template
 
+    # Get the selected template variable from the query parameters
+    temp = int(request.args.get('template', 999)) 
+    if template is None or (temp != template and temp != 999):
+        template = temp
+    
     # Check if TOTAL_PAGES and page_text_boxes are already set
     if TOTAL_PAGES is None or page_text_boxes is None:
-        TOTAL_PAGES, page_text_boxes, all_groups, mapping = compile_info_for_pdf(results, generated_images)
-    
+        TOTAL_PAGES, page_text_boxes, all_groups, mapping = compile_info_for_pdf(results, generated_images, template)
     else:
-        TOTAL_PAGES = caller(all_groups)
+        TOTAL_PAGES, page_text_boxes = caller(all_groups, template)
 
     # Get the current page from the query parameters (default to 1)
     page = int(request.args.get('page', 1))
@@ -61,10 +76,11 @@ def index():
 
     # Render the requested page and its text boxes
     return render_template(
-        'index.html',
+        'display.html',
         total_pages=TOTAL_PAGES,
         text_boxes=page_text_boxes.get(page, {}),
-        current_page=page
+        current_page=page,
+        selected_template=int(template)
     )
 
 @app.route('/submit', methods=['POST'])
@@ -88,7 +104,7 @@ def submit():
     print("All Text Boxes:", page_text_boxes)
 
     # Redirect back to the same page
-    return redirect(f"/index?page={page}")
+    return redirect(f"/display?page={page}")
 
 @app.route('/download-pdf')
 def download_pdf():

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Viewer with Navigation</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/pdf_displayer.css">
 </head>
 <body>
     <div class="container">
@@ -56,7 +56,7 @@
                 if (currentPage > totalPages) currentPage = totalPages;
 
                 // Reload the page with the updated page parameter
-                window.location.href = `/index?page=${currentPage}`;
+                window.location.href = `/display?page=${currentPage}`;
             }
 
             // Function to adjust the height of a single textarea dynamically
