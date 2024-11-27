@@ -104,18 +104,41 @@ def calculate_group_height(page, group_image_path, group_text):
 
     # Approximate number of lines based on text length and max_text_width
     max_text_width = page.rect.width - 2*MARGIN_SIDES - image_width - 10
-    words = group_text.split()
+
+    parts = group_text.splitlines(keepends=True)
     lines = []
     current_line = ""
-    for word in words:
-        test_line = f"{current_line} {word}".strip()
-        test_width = measure_text_width(test_line,BODY_FONT_SIZE)
-        if test_width <= max_text_width:
-            current_line = test_line
-        else:
-            if current_line:
+
+    for part in parts:
+        # Check if the part ends with a newline
+        if "\n" in part:
+            words = part.strip().split()  # Split the part into words without the newline
+            for word in words:
+                test_line = f"{current_line} {word}".strip()
+                test_width = measure_text_width(test_line, BODY_FONT_SIZE)
+                if test_width <= max_text_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+            if current_line:  # Add the current line before the explicit line break
                 lines.append(current_line)
-            current_line = word
+                current_line = ""  # Reset for the next part
+        else:
+            # Treat parts without newlines as normal text
+            words = part.strip().split()
+            for word in words:
+                test_line = f"{current_line} {word}".strip()
+                test_width = measure_text_width(test_line, BODY_FONT_SIZE)
+                if test_width <= max_text_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+
+    # Append any remaining text
     if current_line:
         lines.append(current_line)
 
@@ -137,7 +160,7 @@ def add_groups(page, groups, num_groups, max_height):
         if total_group_height + tmp_height > (max_height) :
             break
         else:
-            total_group_height += calculate_group_height(page, tmp_image,tmp_text)
+            total_group_height += tmp_height
             n += 1
     n = min(n, num_groups)
     vertical_margin = (max_height - total_group_height) / n
