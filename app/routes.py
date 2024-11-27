@@ -1,17 +1,47 @@
 from app import app
-from flask import render_template, request, redirect, send_file
+from flask import render_template, request, redirect, send_file, jsonify
 from app.forms import PDFUploadForm
 from app.converter import convert
 from generate_images import generate_images_from_prompts
 from pdf_generation import compile_info_for_pdf, update_text, caller
 
 import os
+import time
+import threading
+
+UPLOAD_PROGRESS = {"progress": 0}
+
+def process_pdf(pdf_file_path):
+    global UPLOAD_PROGRESS, results, generated_images
+
+    # Simulate progress updates
+    UPLOAD_PROGRESS['progress'] = 10
+    time.sleep(1)  # Simulate processing time
+
+    # Process the PDF and get results
+    results = convert(pdf_file_path)
+
+    UPLOAD_PROGRESS['progress'] = 50
+    time.sleep(1)  # Simulate processing time
+
+    # Generate images using the results as prompts
+    generated_images = generate_images_from_prompts(results)
+
+    UPLOAD_PROGRESS['progress'] = 90
+    time.sleep(1)  # Simulate processing time
+
+    # Remove the uploaded PDF file after processing
+    os.remove(pdf_file_path)
+
+    UPLOAD_PROGRESS['progress'] = 100
 
 @app.route('/', methods=['GET', 'POST'])
 def upload():
     form = PDFUploadForm()
 
     if request.method == 'POST' and form.validate_on_submit():
+        UPLOAD_PROGRESS['progress'] = 0  # Reset progress
+
         # Get the uploaded PDF file
         pdf_file = request.files['pdf_file']
 
@@ -24,21 +54,17 @@ def upload():
         pdf_file_path = os.path.join(files_dir, pdf_file.filename)
         pdf_file.save(pdf_file_path)
 
-        # Process the PDF and get results
-        global results
-        results = convert(pdf_file_path)
+        # Start the background thread for processing
+        thread = threading.Thread(target=process_pdf, args=(pdf_file_path,))
+        thread.start()
 
-        # Remove the uploaded PDF file after processing
-        os.remove(pdf_file_path)
-        
-        # Generate images using the results as prompts
-        global generated_images
-        generated_images = generate_images_from_prompts(results)
-        
-        # Pass both results and generated image paths to the template
-        return redirect('/choose-template')
+        return render_template('processing.html')  # Render a template that shows the progress bar
 
     return render_template('upload.html', form=form)
+
+@app.route('/progress', methods=['GET'])
+def get_progress():
+    return jsonify(UPLOAD_PROGRESS)
 
 @app.route('/choose-template', methods=['GET', 'POST'])
 def choose_template():

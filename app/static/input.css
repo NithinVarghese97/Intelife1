@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Include classes used in processing.html */
+@layer utilities {
+    .w-1/2 { width: 50%; }
+    .w-3/4 { width: 75%; }
+    .h-3/4 { height: 75%; }
+    .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+      --tw-space-y-reverse: 0;
+      margin-top: calc(2rem * calc(1 - var(--tw-space-y-reverse)));
+      margin-bottom: calc(2rem * var(--tw-space-y-reverse));
+    }
+    .max-w-xs { max-width: 20rem; }
+    .h-4 { height: 1rem; }
+  }

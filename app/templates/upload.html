@@ -3,6 +3,7 @@
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-gray-100">
     <form 
+        id="uploadForm"
         action="{{ url_for('upload') }}" 
         method="post" 
         enctype="multipart/form-data" 
@@ -35,12 +36,15 @@
         </button>
     </form>
 
-
     <script>
         document.getElementById('pdfInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file && file.type === "application/pdf") {
                 const fileURL = URL.createObjectURL(file);
+                // Store the PDF URL in sessionStorage
+                sessionStorage.setItem('pdfFileURL', fileURL);
+    
+                // Display the PDF in the upload page
                 document.getElementById('pdfDisplay').style.cssText = "width: 100%; height: 500px; border: 1px solid #ccc;";
                 document.getElementById('pdfDisplay').innerHTML = `
                     <iframe 
@@ -57,4 +61,3 @@
     </script>
 </div>
 {% endblock %}
-
