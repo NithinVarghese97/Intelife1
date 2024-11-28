@@ -88,5 +88,5 @@
     text-align: center;
     color: #ffffff;
     line-height: 20px; /* Center text vertically */
-    transition: width 0.3s ease; /* Smooth animation */
+    transition: width 0.5s ease; /* Smooth animation */
 }

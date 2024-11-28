@@ -21,7 +21,7 @@
             <div class="spinner"></div>
             
             <!-- Processing Message -->
-            <div class="processing-message">Processing Your Request...</div>
+            <div id="processingMessage" class="processing-message">Processing Your Request...</div>
             
             <!-- Progress Bar -->
             <div id="progressBarContainer">
@@ -54,15 +54,29 @@
             .then(response => response.json())
             .then(data => {
                 const progressBar = document.getElementById('progressBar');
+                
                 // Update the progress bar's width and text
                 progressBar.style.width = `${data.progress}%`;
                 progressBar.textContent = `${data.progress}%`;
+
+                // Update the processing message based on progress
+                if (data.progress >= 10 && data.progress < 40) {
+                    processingMessage.textContent = "Generating texts...";
+                } else if (data.progress >= 40 && data.progress < 80) {
+                    processingMessage.textContent = "Generating images...";
+                } else if (data.progress >= 80 && data.progress < 100) {
+                    processingMessage.textContent = "Generating the Easy Read Document...";
+                } else if (data.progress >= 100) {
+                    processingMessage.textContent = "Processing complete! Redirecting...";
+                }
 
                 if (data.progress >= 100) {
                     // Automatically redirect after a short delay
                     setTimeout(() => {
                         window.location.href = '/choose-template';
-                    }, 1000); // 1-second delay to show 100%
+                    }, 1500); // 1-second delay to show 100%
+                } else if (data.progress = 80) {
+                    setTimeout(updateProgress, 1500)
                 } else {
                     // Continue polling
                     setTimeout(updateProgress, 500);

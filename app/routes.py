@@ -16,18 +16,31 @@ def process_pdf(pdf_file_path):
 
     # Simulate progress updates
     UPLOAD_PROGRESS['progress'] = 10
-    time.sleep(1)  # Simulate processing time
+    time.sleep(2.5)  # Simulate processing time
 
+    UPLOAD_PROGRESS['progress'] = 20
+    time.sleep(1)  # Simulate processing time
+    
     # Process the PDF and get results
     results = convert(pdf_file_path)
 
-    UPLOAD_PROGRESS['progress'] = 50
+    UPLOAD_PROGRESS['progress'] = 40
     time.sleep(1)  # Simulate processing time
+    
+    total_images = len(results)
+    
+    def progress_callback(current_image, total_images):
+        # Update the progress based on the current image
+        progress_start = 40
+        progress_end = 80
+        progress_range = progress_end - progress_start
+        progress_increment = progress_range / total_images
+        UPLOAD_PROGRESS['progress'] = int(round(progress_start + (current_image * progress_increment)))
 
     # Generate images using the results as prompts
-    generated_images = generate_images_from_prompts(results)
+    generated_images = generate_images_from_prompts(results, progress_callback)
 
-    UPLOAD_PROGRESS['progress'] = 90
+    UPLOAD_PROGRESS['progress'] = 80
     time.sleep(1)  # Simulate processing time
 
     # Remove the uploaded PDF file after processing

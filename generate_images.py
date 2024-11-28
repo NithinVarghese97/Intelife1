@@ -27,8 +27,9 @@ def engineer_prompt(base_prompt):
     return f"{general_instructions[0]} {base_prompt}{general_instructions[1]}"
 
 # Function to generate images from a list of prompts
-def generate_images_from_prompts(prompts):
+def generate_images_from_prompts(prompts, progress_callback=None):
     images = []
+    total_prompts = len(prompts)
 
     for i, base_prompt in enumerate(prompts):
         # Engineer the prompt
@@ -61,5 +62,9 @@ def generate_images_from_prompts(prompts):
         img.save(generated_image_filepath)
         
         images.append((engineered_prompt, generated_image_filepath))
+        
+        # Update the progress
+        if progress_callback:
+            progress_callback(i +1, total_prompts)
 
     return images
