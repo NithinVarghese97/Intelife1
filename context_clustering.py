@@ -4,6 +4,15 @@ from sklearn.preprocessing import normalize
 from hdbscan import HDBSCAN
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import KeyBERTInspired
+from nltk import word_tokenize          
+from nltk.stem import WordNetLemmatizer 
+
+# https://github.com/MaartenGr/BERTopic/issues/286
+class LemmaTokenizer:
+    def __init__(self):
+        self.wnl = WordNetLemmatizer()
+    def __call__(self, doc):
+        return [self.wnl.lemmatize(t) for t in word_tokenize(doc)]
 
 # Resources:
 # Topic modelling in general: https://medium.com/@m.nath/topic-modeling-algorithms-b7f97cec6005
@@ -40,7 +49,7 @@ def create_BERTopic_model(sentences, min_topic_size=8):
     vectorizer_model = CountVectorizer(
         stop_words="english",
         ngram_range=(1, 2),
-        max_df=0.9
+        tokenizer=LemmaTokenizer(),
     )
 
     representation_model = KeyBERTInspired()
