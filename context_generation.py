@@ -1,10 +1,8 @@
 import pymupdf4llm
-import pathlib
 import re
 import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
+
+nltk.download('punkt')
 
 # Resources:
 # https://pymupdf.readthedocs.io/en/latest/pymupdf4llm/
@@ -14,34 +12,30 @@ def extract(pdf_path):
     text = pymupdf4llm.to_markdown(pdf_path)
     return text
 
-def preprocess(text, language="english"):
-    paragraphs = text.split("\n\n")
-    cleaned_paragraphs = [clean(paragraph, language) for paragraph in paragraphs]
-    unique_paragraphs = list(set(cleaned_paragraphs))
-    return unique_paragraphs
+def preprocess(text):
+    sentences = nltk.sent_tokenize(text)
+    cleaned_sentences = [clean(sent) for sent in sentences]
+    filtered_sentences = [sent for sent in cleaned_sentences if sent.strip() != ""]
 
-def clean(text, language="english"):
-    # 1. lowercase all text
+    # remove duplicates
+    visited = set()
+    unique_sentences = []
+    for sent in filtered_sentences:
+        if sent not in visited:
+            unique_sentences.append(sent)
+            visited.add(sent)
+    
+    return unique_sentences
+
+def clean(text):
     text = text.lower()
+    # remove hashtags, urls, html tags, and lines with only dashes
+    text = re.sub(r'#+\s.*|https?://\S+|www\.\S+|<.*?>|^\s*-+\s*$', '', text, flags=re.MULTILINE)
 
-    # 2. remove headings
-    text = re.sub(r'#+\s.*', '', text)
+    # remove non-alphabetic characters, except for newlines, commas, periods, exclamation/question marks, apostrophes (for contractions), and hyphens (for compound words)
+    text = re.sub(r"[^\r\na-z0-9\s,.!?'-]", ' ', text)
 
-    # 3. remove urls
-    text = re.sub(r'https?://\S+|www\.\S+', '', text)
-    
-    # 4. remove outline numbers, special characters, digits and extra whitespace
-    text = re.sub(r"[^\r\na-z0-9\s,.!?]", " ", text)  # Remove special characters
-    text = re.sub(r"[^\S]+", " ", text)  # Replace multiple spaces with a single space
-    text = re.sub(r'^\s*\d+\.(\d+\.)*\s*', '', text, flags=re.MULTILINE)  # Remove outline numbers
-    text = re.sub(r'\b\d+%?\b', '', text)  # Remove percentages and standalone numbers
-    text = re.sub(r'\b\d+\.\d+\b', '', text)  # Remove decimal numbers
-    text = re.sub(r"[0-9]", "", text)  # Remove digits
+    # remove extra whitespaces
+    text = re.sub(r'\s+', ' ', text)
 
-    # 5. remove new page lines
-    text = re.sub(r'^\s*-+\s*$', '', text, flags=re.MULTILINE)
-    
-    # 6. remove html tags 
-    text = re.sub(r'<.*?>', '', text)
-
-    return text
+    return text.strip()
