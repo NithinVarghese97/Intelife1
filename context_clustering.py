@@ -20,21 +20,7 @@ class LemmaTokenizer:
 # Documentation: https://maartengr.github.io/BERTopic/index.html
 # We have also considered LDA and normal DBSCAN. See older commits for that. Feel free to replace the current model with those!
 
-def cluster_sentences(sentences):
-    topics, topic_model = create_BERTopic_model(sentences)
-    
-    groups = {p: [] for p in topics}
-    for sentence in sentences:
-        prediction = topic_model.transform(sentence)
-        groups[prediction[0][0]] = groups[prediction[0][0]] + [sentence]
-    
-    # Remove outliers (topic = -1 is "outliers" topic, see BERTopic documentation)
-    groups = {k: v for k, v in groups.items() if k != -1}
-    groups = list(groups.values())
-
-    return groups
-
-def create_BERTopic_model(sentences, min_topic_size=8):
+def cluster_sentences(sentences, min_topic_size=8):
 
     sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -62,9 +48,25 @@ def create_BERTopic_model(sentences, min_topic_size=8):
         nr_topics=20, # Easy Read generally has 4-5 pages. With 4 topics per page, we can have max 20 topics.
     )
 
+    """
+    topics variable looks like this: [-1, 1, 2, 3, 2, 1, ...]. 
+    Each number represents the topic number of the 
+    corresponding sentence at the same index in the sentences list. 
+    0 means the first topic, 1 means the second topic, and so on. 
+    -1 means outlier.
+    """
+
     topics, probs = topic_model.fit_transform(sentences, embeddings)
 
     print(topic_model.get_topic_info())
+
+    # Group sentences by topic
+    # e.g. {0: [sent1, sent2], 1: [sent3, sent4], ...}
+
+    groups = {t: [] for t in range(max(topics)+1)}
+    for i, sentence in enumerate(sentences):
+        if topics[i] == -1: continue # Skip outliers
+        groups[topics[i]] = groups[topics[i]] + [sentence]
     
-    
-    return topics, topic_model
+    # [[sent1, sent2], [sent3, sent4], ...]
+    return list(groups.values())
