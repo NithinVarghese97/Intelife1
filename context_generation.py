@@ -2,7 +2,10 @@ import pymupdf4llm
 import re
 import nltk
 
-nltk.download('punkt')
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 # Resources:
 # https://pymupdf.readthedocs.io/en/latest/pymupdf4llm/
