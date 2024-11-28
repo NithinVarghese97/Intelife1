@@ -27,6 +27,8 @@ def add_spacing(document, spacing=0):
         document: Document object.
     """
     paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_before = 0 
+    paragraph.paragraph_format.space_after = 0
     paragraph.paragraph_format.line_spacing = Pt(spacing)
 
 def make_cell_cant_split(cell : _Cell) -> None:
@@ -40,7 +42,7 @@ def make_cell_cant_split(cell : _Cell) -> None:
     trPr.append(OxmlElement('w:cantSplit'))
     
 
-def add_content(document, box_per_page, image_path, text, font_size=12, font_family = 'Calibri', line_spacing = 1.5):
+def add_content(document, image_path, text, image_width, text_width, font_size=12, font_family = 'Calibri', line_spacing = 1.5):
     """
     Add a centered table with an image on the left cell and text on the right cell.
     
@@ -53,20 +55,12 @@ def add_content(document, box_per_page, image_path, text, font_size=12, font_fam
     """
     # Add a table with one row and two cells
     table = document.add_table(rows=1, cols=2)
-    # Adjust image cell width according to number of boxes per page (template)
-    match box_per_page:
-        case 3:
-            image_width = 2
-        case 4:
-            image_width = 1.5
-    set_column_widths(table, [image_width, 6-image_width])
+    # Adjust image cell and text cell width
+    set_column_widths(table, [image_width, text_width])
 
     # Center the table
     table.alignment = WD_ALIGN_PARAGRAPH.CENTER
     table.allow_autofit = False
-    paragraph_format = document.styles['Normal'].paragraph_format
-    paragraph_format.line_spacing = 1.5
-    paragraph_format.space_after = 0
     # Add image to left cell
     left_cell = table.cell(0, 0)
     left_cell.vertical_alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -78,6 +72,8 @@ def add_content(document, box_per_page, image_path, text, font_size=12, font_fam
     right_cell = table.cell(0, 1)
     right_cell.vertical_alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph = right_cell.paragraphs[0]
+    paragraph.paragraph_format.line_spacing = 1.5
+    paragraph.paragraph_format.space_after = 0
     run = paragraph.add_run(text)
     run.font.size = Pt(font_size)
     run.font.name = font_family
@@ -136,40 +132,46 @@ def estimate_row_height(text, image_size, font_size, column_width_in, line_spaci
 
     # Convert the calculated height to inch
     height_inch = height_pt/72
-    print(height_inch, num_lines)
     return max(height_inch, image_size)
 
-def create_page(doc, content_list, boxes_per_page):
+def create_page(doc, content_list, boxes_per_page, page_width, page_height, x_margin, y_margin):
     i = 0
-    match boxes_per_page:
-        case 3:
-            image_height = 2 - 0.16 # 0.16 cell side margin
-            text_width = 4 # side margin is handled in estimate function
-        case 4:
-            image_height = 1.5 - 0.16 # 0.16 cell side margin
-            text_width = 4.5 # side margin is handled in estimate function
 
     # Space for content
-    space_height_inch = 11 - (2 * 1)
-    
+    space_height_inch = page_height - y_margin
+    space_width_inch = page_width - x_margin
+    match boxes_per_page:
+        case 3:
+            image_width = 2 - 0.16 # 0.16 inch cell side margin
+        case 4:
+            image_width = 1.5 - 0.16 
+
+    text_width = space_width_inch - image_width
+
+
     total_table_heights = 0
     for content in content_list:
-        tmp = estimate_row_height(content['text'], image_height, 12, text_width)
-        if (total_table_heights + tmp > space_height_inch - 0.2 *(i+1)):
+        if i == boxes_per_page:
             break
         else:
-            total_table_heights += tmp
-            i += 1
+            tmp = estimate_row_height(content['text'], image_width, 12, text_width)
+            if (total_table_heights + tmp > space_height_inch - 0.2 *(i+1)):
+                break
+            else:
+                total_table_heights += tmp
+                i += 1
+
     spacing_inch = (space_height_inch-total_table_heights) / (i+1)
     spacing_pt = spacing_inch * 72
 
     for content in content_list[0:i]:
-        add_spacing(doc,spacing_pt)
+        add_spacing(doc, spacing_pt)
         add_content(
             doc,
-            boxes_per_page,
             content['image_path'],
-            content['text']
+            content['text'],
+            image_width,
+            text_width
         )
     return i
 
@@ -189,11 +191,8 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
         footer_text: Text of footer
         footer_image: Path of footer image
     """
-    # Open an empty document to write to
-    # Predefined template can also be used by importing docx file.
+    # Open an empty document to write to, top/bottom margin 1 inch, 
     doc = Document()
-    #doc = Document('intelife-template.docx')
-
     
     # Add header (Use table for two cells, left for image, right for text.)
     doc.sections[0].header_distance = 0.2
@@ -239,9 +238,15 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
     footer_logo_run = footer_logo_paragraph.add_run()
     footer_logo_run.add_picture(footer_image, width = Inches(0.5-0.16))
     
+    # Obtain page dimensions and margins for calculation.
+    section = doc.sections[0]
+    page_height, page_width = section.page_height.inches, section.page_width.inches
+    x_margin = section.left_margin.inches + section.right_margin.inches
+    y_margin = section.top_margin.inches + section.bottom_margin.inches
+
     i =  0
     while i < len(content_list):
-        n = create_page(doc, content_list[i:i+boxes_per_page], boxes_per_page)
+        n = create_page(doc, content_list[i:i+boxes_per_page], boxes_per_page, page_width, page_height, x_margin, y_margin)
         # Advance the group index by the number of groups placed on this page
         i += n
         if (i < len(content_list)):
@@ -250,6 +255,49 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
     # Save the document
     doc.save(output_path)
 
+def create_document_template(output_path, content_list, boxes_per_page, template_path = 'intelife-template.docx'):
+    """
+    Create a document with multiple bordered rectangles containing images and text, with specified header and footer.
+    
+    Args:
+        output_path: Path where the document will be saved
+        content_list: List of dictionaries containing:
+            - image_path: Path to image file
+            - text: Text to display
+            - font_size: (optional) Font size in points
+        boxes_per_page: Number of boxes per page desired
+        header_text: Text of header
+        header_image: Path of header image
+        footer_text: Text of footer
+        footer_image: Path of footer image
+    """
+    doc = Document(template_path)
+
+    if doc.paragraphs and not doc.paragraphs[0].text.strip():
+        # Remove the first paragraph if it's blank
+        p = doc.paragraphs[0]._element
+        p.getparent().remove(p)
+        p._element = None
+
+    section = doc.sections[0]
+    page_height, page_width = section.page_height.inches, section.page_width.inches
+    x_margin = section.left_margin.inches + section.right_margin.inches
+    y_margin = section.top_margin.inches + section.bottom_margin.inches + doc.sections[0].header_distance.inches + doc.sections[0].footer_distance.inches
+
+    i =  0
+    while i < len(content_list):
+        n = create_page(doc, content_list[i:i+boxes_per_page], boxes_per_page, page_width, page_height, x_margin, y_margin)
+        # Advance the group index by the number of groups placed on this page
+        i += n
+        if (i < len(content_list)):
+            doc.add_page_break()
+
+    # Save the document
+    doc.save(output_path)
+
+
+# TEST CASE
+''' 
 content_list = [
     {
         'image_path': 'test_images/Standard1.png',
@@ -281,4 +329,7 @@ content_list = [
     }
 ]
 
-create_document('output1.docx', content_list, 4)
+
+create_document('output.docx', content_list, 4)
+create_document_template('output_temp.docx', content_list, 4)
+'''
