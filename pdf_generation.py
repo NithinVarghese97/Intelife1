@@ -86,7 +86,7 @@ def add_header_footer(page, header_image, header_text, footer_image, footer_text
     )
 
 
-def calculate_group_height(page, group_image_path, group_text):
+def calculate_group_height(page, group_text):
     """
     Calculate the height of a group based on the image and the text.
 
@@ -108,11 +108,14 @@ def calculate_group_height(page, group_image_path, group_text):
     parts = group_text.splitlines(keepends=True)
     lines = []
     current_line = ""
-
     for part in parts:
         # Check if the part ends with a newline
         if "\n" in part:
-            words = part.strip().split()  # Split the part into words without the newline
+            # Split the part into words without the newline
+            words = part.strip().split()
+            # If there are no words, the line only consists of blank
+            if not words:
+                current_line = '\n'
             for word in words:
                 test_line = f"{current_line} {word}".strip()
                 test_width = measure_text_width(test_line, BODY_FONT_SIZE)
@@ -156,7 +159,7 @@ def add_groups(page, groups, num_groups, max_height):
     n = 0
     for i in range(len(groups)):
         tmp_image, tmp_text = groups[i]
-        tmp_height = calculate_group_height(page, tmp_image,tmp_text)
+        tmp_height = calculate_group_height(page,tmp_text)
         if total_group_height + tmp_height > (max_height) :
             break
         else:
@@ -173,17 +176,17 @@ def add_groups(page, groups, num_groups, max_height):
         group_image, group_text = groups[i]
 
         # Insert group image and text
-        page.insert_image(fitz.Rect(MARGIN_SIDES, y_position, MARGIN_SIDES + IMAGE_SIZE[0], y_position + + IMAGE_SIZE[1]), 
+        page.insert_image(fitz.Rect(MARGIN_SIDES, y_position, MARGIN_SIDES + IMAGE_SIZE[0], y_position + IMAGE_SIZE[1]), 
                           filename=group_image)  # Adjust width/height as needed
-        text_x = MARGIN_SIDES + IMAGE_SIZE[0] + 10  # 10 units padding
+        text_x = MARGIN_SIDES + IMAGE_SIZE[0] + 10  # 10 units padding on left
         text_y = y_position
-        group_height = calculate_group_height(page, group_image, group_text)
+        group_height = calculate_group_height(page, group_text)
         page.insert_textbox(
             fitz.Rect(
                 text_x,
                 text_y,
                 page.rect.width - MARGIN_SIDES,
-                text_y + group_height + 5
+                text_y + group_height + 5 # 5 units padding at bottom
             ),
             group_text,
             fontname=FONT_NAME,
@@ -201,7 +204,7 @@ def add_groups(page, groups, num_groups, max_height):
     return n
 
 # Generate PDF based on specified group count per page
-def generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page, image_width=100, text_width=400):
+def generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page):
     doc = fitz.open()
     i = 0
     
@@ -232,16 +235,6 @@ header_text = "Header: Sample PDF Document"
 footer_image = "app/static/test_images/logo.png"  # Replace with actual image path
 footer_text = "Footer: Page Information"
 
-'''
-# Define the groups with images and text for each "Standard"
-all_groups = [
-    ("test_images/Standard2.png", "Standard 2 .Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities test. Your Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife's"),
-    ("test_images/Standard3.png", "Standard 3. Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities testtttYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sY"),
-    ("test_images/Standard4.png", "Standard 4 Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities"),
-    ("test_images/Standard5.png", "Standard 5: Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities"),
-    ("test_images/Standard5.png", "Standard 5. Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities"),
-]
-'''
 
 # Specify the number of groups per page
 # Different templates would be different groups_per_page.
