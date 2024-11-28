@@ -21,10 +21,11 @@ def set_column_widths(table, col_widths):
 
 def add_spacing(document, spacing=0):
     """
-    Add vertical spacing using an empty paragraph with specific spacing.
+    Add vertical spacing using an empty paragraph with specified spacing size.
 
     Args:
         document: Document object.
+        spacing: Size of spacing (in points)
     """
     paragraph = document.add_paragraph()
     paragraph.paragraph_format.space_before = 0 
@@ -33,7 +34,7 @@ def add_spacing(document, spacing=0):
 
 def make_cell_cant_split(cell : _Cell) -> None:
     """
-    Makes a table cell not break across pages.
+    Makes a table cell not break across pages. Prevents overflowing of table content.
 
     Args:
         cell: Table Cell object.
@@ -81,32 +82,34 @@ def add_content(document, image_path, text, image_width, text_width, font_size=1
     make_cell_cant_split(left_cell)
     make_cell_cant_split(right_cell)
 
-def measure_text_width(text, font_size, font_path = None):
+def measure_text_width(text, font_size, font_path = "test_fonts/calibri.ttf"):
     """
     Measures the width of specified text using Pillow.
+    Currently uses normal Calibri as default.
 
     Args:
     text (str): Text content
     font_size (int): Font size in points.
     font_path (str): Path to the font file (optional).
     """
-    font = ImageFont.truetype("test_fonts/calibri.ttf", font_size)
+    font = ImageFont.truetype(font_path, font_size)
     # Measure the width of the entire text (in pixels)
     return font.getlength(text)
 
-def estimate_row_height(text, image_size, font_size, column_width_in, line_spacing = 1.5, font_path=None):
+def estimate_row_height(text, image_size, font_size, column_width_in, line_spacing = 1.5, font_path = "test_fonts/calibri.ttf"):
     """
     Estimate the height of a row based on exact character widths using Pillow.
     
     Args:
         text (str): Text content in the row.
+        image_size (float): Size of the image (in pixels).
         font_size (int): Font size in points.
         column_width_in (float): Width of the column in inches.
         line_spacing (float): Line spacing of document (1.5 for Easy Read Documents)
         font_path (str): Path to the font file (optional).
     
     Returns:
-        tuple: Estimated number of lines and estimated height of the row in inches.
+        The height of the box/table based on the image and text height.
     """
     # Convert column width to pixels
     column_width_pt = (column_width_in - 0.16) * 80 # 80 DPI (dots per inch), 0.08 inch is default side margin.
@@ -135,11 +138,25 @@ def estimate_row_height(text, image_size, font_size, column_width_in, line_spaci
     return max(height_inch, image_size)
 
 def create_page(doc, content_list, boxes_per_page, page_width, page_height, x_margin, y_margin):
-    i = 0
+    """
+    Inserts up to `boxes_per_page` boxes into the word document based on margin calculations to fit within one page.
 
-    # Space for content
+    Args:
+        doc: Document object
+        content_list: List of image+text tuples (default use case: LLM output)
+        boxes_per_page: Maximum number of boxes to fit in the page
+        page_width: Width of the page/document
+        page_height: Height of the page/document
+        x_margin: Total horizontal margins (space that cannot be occupied by content)
+        y_margin: Total vertical margins (space that cannot be occupied by content)
+
+    Returns:
+        i: Number of groups successfully fitted into the page
+    """
+    # Calculate space available for content
     space_height_inch = page_height - y_margin
     space_width_inch = page_width - x_margin
+
     match boxes_per_page:
         case 3:
             image_width = 2 - 0.16 # 0.16 inch cell side margin
@@ -148,20 +165,22 @@ def create_page(doc, content_list, boxes_per_page, page_width, page_height, x_ma
 
     text_width = space_width_inch - image_width
 
+    # Track the number of boxes and their combined height in the current page.
+    i = 0
+    total_height = 0
 
-    total_table_heights = 0
     for content in content_list:
         if i == boxes_per_page:
             break
         else:
             tmp = estimate_row_height(content['text'], image_width, 12, text_width)
-            if (total_table_heights + tmp > space_height_inch - 0.2 *(i+1)):
+            if (total_height + tmp > space_height_inch - 0.2 *(i+1)): # Check if the latest box can fit with a minimum margin of 0.2.
                 break
             else:
-                total_table_heights += tmp
+                total_height += tmp
                 i += 1
 
-    spacing_inch = (space_height_inch-total_table_heights) / (i+1)
+    spacing_inch = (space_height_inch-total_height) / (i+1)
     spacing_pt = spacing_inch * 72
 
     for content in content_list[0:i]:
@@ -257,7 +276,7 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
 
 def create_document_template(output_path, content_list, boxes_per_page, template_path = 'intelife-template.docx'):
     """
-    Create a document with multiple bordered rectangles containing images and text, with specified header and footer.
+    Create a document with multiple bordered rectangles containing images and text, with an existing .docx document for the formatting.
     
     Args:
         output_path: Path where the document will be saved
