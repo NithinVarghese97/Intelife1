@@ -1,38 +1,8 @@
 import fitz
+import os 
+from pdf2image import convert_from_path
 
-'''
-def replace_pdf_text(input_pdf_path, output_pdf_path, body_text_locations, new_texts):
-    doc = fitz.open(input_pdf_path)
-    
-    text_index = 0
-    for page_num in range(len(doc)):
-        page = doc[page_num]
-        
-        # Remove existing body text
-        for rect in body_text_locations:
-            if isinstance(rect, tuple) and len(rect) == 4:
-                rect = fitz.Rect(*rect)
-            page.add_redact_annot(rect)
-        page.apply_redactions()
 
-        # Add new text
-        for rect in body_text_locations:
-            if text_index < len(new_texts):
-                if isinstance(rect, tuple) and len(rect) == 4:
-                    rect = fitz.Rect(*rect)
-                page.insert_textbox(rect, new_texts[text_index], fontsize=11, fontname="helv",
-                                    align=fitz.TEXT_ALIGN_LEFT)
-                text_index += 1
-            else:
-                break  # No more new texts to add
-
-        if text_index >= len(new_texts):
-            break  # No more new texts to add
-    
-    # Save the modified PDF
-    doc.save(output_pdf_path)
-    doc.close()
-'''
 # Image and font size for footer and header
 LOGO_SIZE = (50,25) 
 FONT_NAME = "helv"
@@ -49,12 +19,33 @@ MARGIN_SIDES = 40
 MINIMUM_VERTICAL_MARGIN = 10
 
 def measure_text_width(text, font_size):
+    '''
+    Calculate the width of given text at the specified font size.
+    Used to simulate line wrapping.
+
+    Parameters:
+    - text: Text content
+    - font_size: Font size of the text
+
+    Returns:
+    - Total width of the text at the font size.
+    '''
     font = fitz.Font(FONT_NAME)
     text_width = font.text_length(text,font_size)
     return text_width
 
 
 def add_header_footer(page, header_image, header_text, footer_image, footer_text):
+    '''
+    Inserts header and footer (image + text) into the specified PDF document page.
+
+    Parameters:
+    - page: Page of PDF document
+    - header_image: Path to the header image
+    - header_text: Text of the header
+    - header_image: Path to the footer image
+    - header_text: Text of the footer
+    '''
     # Adding header image and text
     page.insert_image(fitz.Rect(MARGIN_SIDES, MARGIN_TOP - LOGO_SIZE[1], 
                                 MARGIN_SIDES + LOGO_SIZE[0], MARGIN_TOP),
@@ -85,36 +76,61 @@ def add_header_footer(page, header_image, header_text, footer_image, footer_text
     )
 
 
-def calculate_group_height(page, group_image_path, group_text):
-    """
+def calculate_group_height(page, group_text):
+    '''
     Calculate the height of a group based on the image and the text.
 
     Parameters:
-    - page: The current PDF page.
-    - group_image_path: Path to the group's image.
+    - page: The specified PDF Page.
     - group_text: The text content of the group.
 
     Returns:
     - Total height required for the group.
-    """
+    '''
     # Use default scaled image size
     image_height = IMAGE_SIZE[1]
     image_width = IMAGE_SIZE[0]
 
     # Approximate number of lines based on text length and max_text_width
     max_text_width = page.rect.width - 2*MARGIN_SIDES - image_width - 10
-    words = group_text.split()
+
+    parts = group_text.splitlines(keepends=True)
     lines = []
     current_line = ""
-    for word in words:
-        test_line = f"{current_line} {word}".strip()
-        test_width = measure_text_width(test_line,BODY_FONT_SIZE)
-        if test_width <= max_text_width:
-            current_line = test_line
-        else:
-            if current_line:
+    for part in parts:
+        # Check if the part ends with a newline
+        if "\n" in part:
+            # Split the part into words without the newline
+            words = part.strip().split()
+            # If there are no words, the line only consists of blank
+            if not words:
+                current_line = '\n'
+            for word in words:
+                test_line = f"{current_line} {word}".strip()
+                test_width = measure_text_width(test_line, BODY_FONT_SIZE)
+                if test_width <= max_text_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+            if current_line:  # Add the current line before the explicit line break
                 lines.append(current_line)
-            current_line = word
+                current_line = ""  # Reset for the next part
+        else:
+            # Treat parts without newlines as normal text
+            words = part.strip().split()
+            for word in words:
+                test_line = f"{current_line} {word}".strip()
+                test_width = measure_text_width(test_line, BODY_FONT_SIZE)
+                if test_width <= max_text_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+
+    # Append any remaining text
     if current_line:
         lines.append(current_line)
 
@@ -128,15 +144,27 @@ def calculate_group_height(page, group_image_path, group_text):
 
 # Function to add groups with dynamic spacing
 def add_groups(page, groups, num_groups, max_height):
+    '''
+    Add up to `num_groups` groups of image+text to the specified Page.
+
+    Parameters:
+    - page: The specified PDF Page.
+    - groups: List of tuples containing image path and text. 
+    - num_groups: Maximum number of content blocks in one page.
+    - max_height: Maximum height of all content (in pixels)
+
+    Returns:
+    - Number of groups/tuples added to the page
+    '''
     total_group_height = 0
     n = 0
     for i in range(len(groups)):
         tmp_image, tmp_text = groups[i]
-        tmp_height = calculate_group_height(page, tmp_image,tmp_text)
+        tmp_height = calculate_group_height(page,tmp_text)
         if total_group_height + tmp_height > (max_height) :
             break
         else:
-            total_group_height += calculate_group_height(page, tmp_image,tmp_text)
+            total_group_height += tmp_height
             n += 1
     n = min(n, num_groups)
     vertical_margin = (max_height - total_group_height) / n
@@ -149,17 +177,17 @@ def add_groups(page, groups, num_groups, max_height):
         group_image, group_text = groups[i]
 
         # Insert group image and text
-        page.insert_image(fitz.Rect(MARGIN_SIDES, y_position, MARGIN_SIDES + IMAGE_SIZE[0], y_position + + IMAGE_SIZE[1]), 
+        page.insert_image(fitz.Rect(MARGIN_SIDES, y_position, MARGIN_SIDES + IMAGE_SIZE[0], y_position + IMAGE_SIZE[1]), 
                           filename=group_image)  # Adjust width/height as needed
-        text_x = MARGIN_SIDES + IMAGE_SIZE[0] + 10  # 10 units padding
+        text_x = MARGIN_SIDES + IMAGE_SIZE[0] + 10  # 10 units padding on left
         text_y = y_position
-        group_height = calculate_group_height(page, group_image, group_text)
+        group_height = calculate_group_height(page, group_text)
         page.insert_textbox(
             fitz.Rect(
                 text_x,
                 text_y,
-                page.rect.width - MARGIN_SIDES - 10,
-                text_y + group_height + 5
+                page.rect.width - MARGIN_SIDES,
+                text_y + group_height + 5 # 5 units padding at bottom
             ),
             group_text,
             fontname=FONT_NAME,
@@ -177,7 +205,19 @@ def add_groups(page, groups, num_groups, max_height):
     return n
 
 # Generate PDF based on specified group count per page
-def generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page, image_width=100, text_width=400):
+def generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page):
+    '''
+    Generates a PDF document and saves it to `output_path`
+
+    Parameters:
+    - output_path: Desired path of the output file
+    - header_image: Path to the header image
+    - header_text: Text of the header
+    - footer_image: Path to the footer image
+    - footer_text: Text of the footer
+    - all_groups: List of all image + text tuples (default use case is LLM output)
+    - groups_per_page: Maximum number of groups/tuples per page
+    '''
     doc = fitz.open()
     i = 0
     
@@ -200,26 +240,111 @@ def generate_pdf(output_path, header_image, header_text, footer_image, footer_te
 
 
 ## ALL CODE BELOW IS JUST A TEST WITH EXAMPLE.
-output_path = "output.pdf"
+output_path = "app/static/pdf/output.pdf"
 
 # Define header and footer information
-header_image = "test_images/logo.png"  # Replace with actual image path
+header_image = "app/static/test_images/logo.png"  # Replace with actual image path
 header_text = "Header: Sample PDF Document"
-footer_image = "test_images/logo.png"  # Replace with actual image path
+footer_image = "app/static/test_images/logo.png"  # Replace with actual image path
 footer_text = "Footer: Page Information"
 
-# Define the groups with images and text for each "Standard"
-all_groups = [
-    ("test_images/Standard2.png", "Standard 2 .Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities test. Your Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife's"),
-    ("test_images/Standard3.png", "Standard 3. Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities testtttYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sYour Rights and Intelife'sY"),
-    ("test_images/Standard4.png", "Standard 4 Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities"),
-    ("test_images/Standard5.png", "Standard 5: Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities"),
-    ("test_images/Standard5.png", "Standard 5. Intelife promotes your legal and human rights. Your rights are upheld and protected. Your Rights and Intelife's Responsibilities"),
-]
 
 # Specify the number of groups per page
 # Different templates would be different groups_per_page.
 groups_per_page = 4
 
-# Generate the PDF with the sample data
-generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page)
+# Constants for PDF processing
+PDF_PATH = "app/static/pdf/output.pdf"
+OUTPUT_DIR = "app/static/pdf2image"
+
+def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]], template: int = 3):
+    all_groups = []
+    for i in range(len(text)):
+        all_groups.append([image_paths[i][1], text[i]])
+        
+    # Generate the PDF with the sample data
+    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, template)
+    generate_all_images(output_path, OUTPUT_DIR)
+    TOTAL_PAGES = get_page_count(output_path)
+    page_text_boxes = populate_text_boxes(TOTAL_PAGES, text, template)
+    
+    # Create a mapping between `page_text_boxes` and `all_groups`
+    mapping = {}
+
+    # Initialize mapping in order
+    list_index = 0
+    for page, boxes in page_text_boxes.items():
+        for box in boxes.keys():
+            if list_index < len(all_groups):
+                mapping[(page, box)] = list_index
+                list_index += 1
+    
+    
+    return TOTAL_PAGES, page_text_boxes, all_groups, mapping
+        
+def caller(text, template):
+    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, text, template)
+    generate_all_images(output_path, OUTPUT_DIR)
+    TOTAL_PAGES = get_page_count(output_path)
+    
+    temp = []
+    for i in text:
+        temp.append(i[1])
+    page_text_boxes = populate_text_boxes(TOTAL_PAGES, temp, template)
+    
+    return TOTAL_PAGES, page_text_boxes
+    
+# Function to update text in both dictionary and list
+def update_text(l, d, map, page, box, new_text):
+    # Update the dictionary
+    if page in d and box in d[page]:
+        d[page][box] = new_text
+        
+        # Update the corresponding list
+        list_index = map.get((page, box))
+        if list_index is not None:
+            l[list_index][1] = new_text
+
+def get_page_count(pdf_file):
+    """
+    Returns the total number of pages in the PDF file.
+    """
+    doc = fitz.open(pdf_file)  # Open the PDF document
+    page_count = len(doc)  # Get the number of pages
+    doc.close()  # Close the document
+    return page_count
+
+def populate_text_boxes(total_pages, results, template):
+    # Initialize the page_text_boxes dictionary with empty dictionaries
+    page_text_boxes = {page: {} for page in range(1, total_pages + 1)}
+    
+    # Use an iterator to assign results to boxes
+    result_iterator = iter(results)
+    
+    # Loop through each page
+    for page in range(1, total_pages + 1):
+        # Assign a maximum of 3 or 4 boxes per page depending on the template
+        for box_num in range(1, template + 1):
+            try:
+                # Assign the next result to the current box
+                text = next(result_iterator)
+                page_text_boxes[page][f"box{box_num}"] = text
+            except StopIteration:
+                # If results are exhausted, return the dictionary
+                return page_text_boxes
+    print(page_text_boxes)
+    return page_text_boxes
+
+def generate_all_images(pdf_path, output_dir):
+    """
+    Converts all pages of the PDF into images and saves them in the output directory.
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Convert all pages of the PDF into images
+    images = convert_from_path(pdf_path, dpi=200)
+    for i, image in enumerate(images, start=1):
+        output_path = os.path.join(output_dir, f"pdf_page_{i}.jpg")
+        image.save(output_path, "JPEG")
+        print(f"Saved: {output_path}")
