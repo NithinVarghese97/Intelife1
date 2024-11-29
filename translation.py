@@ -5,7 +5,6 @@ from scipy.spatial.distance import cosine
 import tiktoken
 from openai import OpenAI
 import os
-import re
 from dotenv import load_dotenv
 from tqdm import tqdm
 from typing import List, Tuple, Dict, Any, Optional
