@@ -2,6 +2,7 @@ import pymupdf4llm
 import re
 import nltk
 
+# Download the Punkt tokenizer for sentence tokenization if not already downloaded
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -34,11 +35,11 @@ def clean(text):
     text = text.lower()
     # remove hashtags, urls, html tags, and lines with only dashes
     text = re.sub(r'#+\s.*|https?://\S+|www\.\S+|<.*?>|^\s*-+\s*$', '', text, flags=re.MULTILINE)
-
-    # remove non-alphabetic characters, except for newlines, commas, periods, exclamation/question marks, apostrophes (for contractions), and hyphens (for compound words)
-    text = re.sub(r"[^\r\na-z0-9\s,.!?'-]", ' ', text)
-
+    # remove apostrophes or hyphens that are not part of a word (i.e. save contracted and hyphenated words)
+    text = re.sub(r"(?<!\w)['’‑-]|['’‑-](?!\w)", "", text)
+    # remove non-alphabetic characters except for newlines, spaces, apostrophes, and hyphens
+    text = re.sub(r"[^\r\na-z0-9\s'-’]", ' ', text)
     # remove extra whitespaces
     text = re.sub(r'\s+', ' ', text)
-
-    return text.strip()
+    text = text.strip()
+    return text
