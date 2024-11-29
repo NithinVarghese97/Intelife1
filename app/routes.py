@@ -4,6 +4,8 @@ from app.forms import PDFUploadForm
 from app.converter import convert
 from generate_images import generate_images_from_prompts
 from pdf_generation import compile_info_for_pdf, update_text, caller
+from word2pdf import convert_to_pdf
+from werkzeug.utils import secure_filename
 
 import os
 import time
@@ -55,20 +57,30 @@ def upload():
     if request.method == 'POST' and form.validate_on_submit():
         UPLOAD_PROGRESS['progress'] = 0  # Reset progress
 
-        # Get the uploaded PDF file
-        pdf_file = request.files['pdf_file']
+        # Get the uploaded file
+        uploaded_file = request.files['pdf_file']
+
+        # Secure the filename
+        filename = secure_filename(uploaded_file.filename)
+        file_extension = os.path.splitext(filename)[1].lower()
 
         # Ensure the /files directory exists
         files_dir = os.path.join(os.path.dirname(__file__), 'files')
         if not os.path.exists(files_dir):
             os.makedirs(files_dir)
 
-        # Save the uploaded PDF file to the /files directory
-        pdf_file_path = os.path.join(files_dir, pdf_file.filename)
-        pdf_file.save(pdf_file_path)
+        # Save the uploaded file to the /files directory
+        file_path = os.path.join(files_dir, filename)
+        uploaded_file.save(file_path)
+        
+        if file_extension == '.docx':
+            # Convert DOCX to PDF and then process
+            convert_to_pdf(file_path)
+            file_path = file_path.replace('.docx', '.pdf')
+        
 
         # Start the background thread for processing
-        thread = threading.Thread(target=process_pdf, args=(pdf_file_path,))
+        thread = threading.Thread(target=process_pdf, args=(file_path,))
         thread.start()
 
         return render_template('processing.html')  # Render a template that shows the progress bar
