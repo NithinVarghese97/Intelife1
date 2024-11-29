@@ -1,10 +1,9 @@
 from docx import Document
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import parse_xml, OxmlElement
+from docx.oxml import OxmlElement
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.table import _Cell
-from docx.oxml.ns import qn
 from PIL import ImageFont
 
 def set_column_widths(table, col_widths):
@@ -43,7 +42,7 @@ def make_cell_cant_split(cell : _Cell) -> None:
     trPr.append(OxmlElement('w:cantSplit'))
     
 
-def add_content(document, image_path, text, image_width, text_width, font_size=12, font_family = 'Calibri', line_spacing = 1.5):
+def add_content(document, image_path, text, image_width, text_width, font_size=12, font_family = 'Calibri', line_spacing = 1):
     """
     Add a centered table with an image on the left cell and text on the right cell.
     
@@ -51,8 +50,9 @@ def add_content(document, image_path, text, image_width, text_width, font_size=1
         document: Document object
         image_path: Path to the image file
         text: Text to display on the right
-        font_size: Size of the text in points (12 by default for Intelife Easy Read Documents)
+        font_size: Size of the text in points (12 by default for Intelife Easy Read Documents, 14 and above recommended by DDWA)
         font_family: Font family of the text (Calibri by default for Intelife Easy Read Documents)
+        line_spacing: Line spacing of the text (Single line spacing by default for Intelife documents, 1.5 recommended by DDWA)
     """
     # Add a table with one row and two cells
     table = document.add_table(rows=1, cols=2)
@@ -73,7 +73,7 @@ def add_content(document, image_path, text, image_width, text_width, font_size=1
     right_cell = table.cell(0, 1)
     right_cell.vertical_alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph = right_cell.paragraphs[0]
-    paragraph.paragraph_format.line_spacing = 1.5
+    paragraph.paragraph_format.line_spacing = line_spacing
     paragraph.paragraph_format.space_after = 0
     run = paragraph.add_run(text)
     run.font.size = Pt(font_size)
@@ -96,7 +96,7 @@ def measure_text_width(text, font_size, font_path = "test_fonts/calibri.ttf"):
     # Measure the width of the entire text (in pixels)
     return font.getlength(text)
 
-def estimate_row_height(text, image_size, font_size, column_width_in, line_spacing = 1.5, font_path = "test_fonts/calibri.ttf"):
+def estimate_row_height(text, image_size, font_size, column_width_in, line_spacing = 1, font_path = "test_fonts/calibri.ttf"):
     """
     Estimate the height of a row based on exact character widths using Pillow.
     
@@ -105,7 +105,7 @@ def estimate_row_height(text, image_size, font_size, column_width_in, line_spaci
         image_size (float): Size of the image (in pixels).
         font_size (int): Font size in points.
         column_width_in (float): Width of the column in inches.
-        line_spacing (float): Line spacing of document (1.5 for Easy Read Documents)
+        line_spacing (float): Line spacing of document (1 for Intelife documents, 1.5 for DDWA Easy Read Documents)
         font_path (str): Path to the font file (optional).
     
     Returns:
@@ -214,7 +214,7 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
     doc = Document()
     
     # Add header (Use table for two cells, left for image, right for text.)
-    doc.sections[0].header_distance = 0.2
+    doc.sections[0].header_distance = Inches(0.3)
     header = doc.sections[0].header
     header_table = header.add_table(rows=1, cols=2, width=Inches(6))
 
@@ -228,7 +228,7 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
     header_logo_cell = header_table.cell(0, 0)
     header_logo_paragraph = header_logo_cell.paragraphs[0]
     header_logo_run = header_logo_paragraph.add_run()
-    header_logo_run.add_picture(header_image, width=Inches(0.5-0.16))
+    header_logo_run.add_picture(header_image, width=Inches(0.5))
 
     # Add header text
     header_text_cell = header_table.cell(0, 1)
@@ -236,7 +236,7 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
     header_text_paragraph.text = header_text
 
     # Add footer
-    doc.sections[0].footer_distance = 0.2
+    doc.sections[0].footer_distance = Inches(0.3)
     footer = doc.sections[0].footer
     footer_table = footer.add_table(rows=1, cols=2, width=Inches(6))
     set_column_widths(footer_table, [5.5,0.5])
@@ -251,11 +251,12 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
     footer_text_paragraph = footer_text_cell.paragraphs[0]
     footer_text_paragraph.text = footer_text
     footer_text_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
     # Add footer image
     footer_logo_cell = footer_table.cell(0,1)
     footer_logo_paragraph = footer_logo_cell.paragraphs[0]
     footer_logo_run = footer_logo_paragraph.add_run()
-    footer_logo_run.add_picture(footer_image, width = Inches(0.5-0.16))
+    footer_logo_run.add_picture(footer_image, width = Inches(0.5))
     
     # Obtain page dimensions and margins for calculation.
     section = doc.sections[0]
@@ -264,6 +265,7 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
     y_margin = section.top_margin.inches + section.bottom_margin.inches
 
     i =  0
+    # Write document with pages until all content is written
     while i < len(content_list):
         n = create_page(doc, content_list[i:i+boxes_per_page], boxes_per_page, page_width, page_height, x_margin, y_margin)
         # Advance the group index by the number of groups placed on this page
@@ -276,28 +278,25 @@ def create_document(output_path, content_list, boxes_per_page, header_text = "He
 
 def create_document_template(output_path, content_list, boxes_per_page, template_path = 'intelife-template.docx'):
     """
-    Create a document with multiple bordered rectangles containing images and text, with an existing .docx document for the formatting.
+    Create a document with multiple tables containing images and text, with an existing .docx document for the formatting.
     
     Args:
         output_path: Path where the document will be saved
         content_list: List of dictionaries containing:
             - image_path: Path to image file
             - text: Text to display
-            - font_size: (optional) Font size in points
         boxes_per_page: Number of boxes per page desired
-        header_text: Text of header
-        header_image: Path of header image
-        footer_text: Text of footer
-        footer_image: Path of footer image
+        template_path: Path where the template document is stored, Intelife template as default
     """
     doc = Document(template_path)
 
+    # Remove the first paragraph if it's blank
     if doc.paragraphs and not doc.paragraphs[0].text.strip():
-        # Remove the first paragraph if it's blank
         p = doc.paragraphs[0]._element
         p.getparent().remove(p)
         p._element = None
 
+    # Obtain page dimensions and margins of the template document
     section = doc.sections[0]
     page_height, page_width = section.page_height.inches, section.page_width.inches
     x_margin = section.left_margin.inches + section.right_margin.inches
@@ -316,7 +315,7 @@ def create_document_template(output_path, content_list, boxes_per_page, template
 
 
 # TEST CASE
-''' 
+'''
 content_list = [
     {
         'image_path': 'test_images/Standard1.png',
