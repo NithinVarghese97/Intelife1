@@ -28,7 +28,7 @@ def preprocess(text):
         if sent not in visited:
             unique_sentences.append(sent)
             visited.add(sent)
-    
+
     return unique_sentences
 
 def clean(text):
@@ -38,7 +38,7 @@ def clean(text):
     # remove apostrophes or hyphens that are not part of a word (i.e. save contracted and hyphenated words)
     text = re.sub(r"(?<!\w)['’‑-]|['’‑-](?!\w)", "", text)
     # remove non-alphabetic characters except for newlines, spaces, apostrophes, and hyphens
-    text = re.sub(r"[^\r\na-z0-9\s'-’]", ' ', text)
+    text = re.sub(r"[^\r\na-z0-9\s'’\-]", ' ', text)
     # remove extra whitespaces
     text = re.sub(r'\s+', ' ', text)
     text = text.strip()
