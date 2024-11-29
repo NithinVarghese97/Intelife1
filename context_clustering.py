@@ -9,7 +9,6 @@ from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer 
 import gensim.corpora as corpora
 from gensim.models.coherencemodel import CoherenceModel
-import tqdm
 
 # https://github.com/MaartenGr/BERTopic/issues/286
 class LemmaTokenizer:
@@ -24,59 +23,78 @@ class LemmaTokenizer:
 # Documentation: https://maartengr.github.io/BERTopic/index.html
 # We have also considered LDA and normal DBSCAN. See older commits for that. Feel free to replace the current model with those!
 
-def cluster_sentences(sentences, min_topic_size=8):
+def cluster_sentences(sentences, config={}):
+    """
+    Parameters:
+    -----------
+    sentences : list of str
+        List of sentences to be clustered.
+    config : dict
+        Dictionary of hyperparameters for the clustering model.
+        Default values are:
+        - embedding_model: 'all-MiniLM-L6-v2'
+        - min_cluster_size: 8
+        - min_samples: 8
+        - cluster_selection_epsilon: 0.0
+        - cluster_selection_method: 'leaf'
+        - ngram_range: (1, 2)
+        - max_df: 1.0
+        - min_df: 1
+        - nr_topics: 20
 
-    sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+    Returns:
+    --------
+    result : list of list of str
+        A list of groups, where each group is a list of sentences that belong to the same topic.
+    coherence : float
+        The coherence score of the topics.
+    """
 
+    sentence_model = SentenceTransformer(config.get('embedding_model', 'all-MiniLM-L6-v2'))
     embeddings = normalize(sentence_model.encode(sentences))
 
+    umap_model = UMAP(random_state=42)
+
     hdbscan_model = HDBSCAN(
-        min_cluster_size=min_topic_size,
-        cluster_selection_method="leaf", # https://hdbscan.readthedocs.io/en/latest/parameter_selection.html#leaf-clustering
+        min_cluster_size=config.get('min_cluster_size', 8),
+        min_samples=config.get('min_samples', 8),
+        cluster_selection_epsilon=config.get('cluster_selection_epsilon', 0.0),
+        cluster_selection_method=config.get('cluster_selection_method', "leaf"),
         prediction_data=True,
     )
 
     vectorizer_model = CountVectorizer(
         stop_words="english",
-        ngram_range=(1, 2),
         tokenizer=LemmaTokenizer(),
+        ngram_range=config.get('ngram_range', (1, 2)),
+        max_df=config.get('max_df', 1.0),
+        min_df=config.get('min_df', 1),
     )
 
     representation_model = KeyBERTInspired()
-
+    
     topic_model = BERTopic(
         embedding_model=sentence_model,
+        umap_model=umap_model,
         hdbscan_model=hdbscan_model,
         vectorizer_model=vectorizer_model,
         representation_model=representation_model,
-        nr_topics=20, # Easy Read generally has 4-5 pages. With 4 topics per page, we can have max 20 topics.
+        nr_topics=config.get('nr_topics', 20),
     )
-
-    """
-    topics variable looks like this: [-1, 1, 2, 3, 2, 1, ...]. 
-    Each number represents the topic number of the 
-    corresponding sentence at the same index in the sentences list. 
-    0 means the first topic, 1 means the second topic, and so on. 
-    -1 means outlier.
-    """
 
     topics, probs = topic_model.fit_transform(sentences, embeddings)
 
     print(topic_model.get_topic_info())
 
-    # Group sentences by topic
-    # e.g. {0: [sent1, sent2], 1: [sent3, sent4], ...}
-
     groups = {t: [] for t in range(max(topics)+1)}
     for i, sentence in enumerate(sentences):
-        if topics[i] == -1: continue # Skip outliers
+        if topics[i] == -1: continue
         groups[topics[i]] = groups[topics[i]] + [sentence]
     
+    result = list(groups.values())
     coherence = calculate_coherence_score(sentences, groups, topic_model)
-    print(f"Coherence score: {coherence}")
-
-    # [[sent1, sent2], [sent3, sent4], ...]
-    return list(groups.values())
+    
+    return result, coherence
 
 def calculate_coherence_score(sentences, groups, topic_model):
     """
@@ -111,89 +129,3 @@ def calculate_coherence_score(sentences, groups, topic_model):
 
     return coherence_model.get_coherence()
 
-def run_topic_model_experiments(sentences):
-    embedding_models = [
-        'all-MiniLM-L6-v2',
-    ]
-    min_cluster_sizes = [3, 5, 8, 10, 15, 20, 25]
-    min_sample_sizes = [3, 5, 8, 10, 15, 20, 25]
-    ngram_ranges = [(1, 1), (1, 2), (1, 3), (1, 4)]
-
-    config_list = [
-        {
-            'embedding_model': embedding_model,
-            'min_cluster_size': min_cluster_size,
-            'ngram_range': ngram_range,
-        }
-        for embedding_model in embedding_models
-        for min_cluster_size in min_cluster_sizes
-        for ngram_range in ngram_ranges
-    ]
-
-    results = []
-    
-    for config in tqdm.tqdm(config_list, desc="Running topic model experiments"):
-        try:
-            # Create SentenceTransformer with specified model
-            sentence_model = SentenceTransformer(
-                config.get('embedding_model', 'all-MiniLM-L6-v2')
-            )
-            
-            # Normalize embeddings
-            embeddings = normalize(sentence_model.encode(sentences))
-
-            umap_model = UMAP(random_state=42)
-            
-            # Configure HDBSCAN
-            hdbscan_model = HDBSCAN(
-                min_cluster_size=config.get('min_cluster_size', 8),
-                cluster_selection_method=config.get('cluster_selection_method', "leaf"),
-                prediction_data=True,
-            )
-            
-            # Configure Vectorizer
-            vectorizer_model = CountVectorizer(
-                stop_words="english",
-                ngram_range=config.get('ngram_range', (1, 2)),
-                tokenizer=LemmaTokenizer(),
-            )
-            
-            # Choose representation model
-            representation_model = KeyBERTInspired()
-            
-            # Create BERTopic model
-            topic_model = BERTopic(
-                embedding_model=sentence_model,
-                umap_model=umap_model,
-                hdbscan_model=hdbscan_model,
-                vectorizer_model=vectorizer_model,
-                representation_model=representation_model,
-                nr_topics=20,
-            )
-            
-            # Fit and transform
-            topics, probs = topic_model.fit_transform(sentences, embeddings)
-            
-            # Group sentences by topic
-            groups = {t: [] for t in range(max(topics)+1)}
-            for i, sentence in enumerate(sentences):
-                if topics[i] == -1: continue
-                groups[topics[i]] = groups[topics[i]] + [sentence]
-            
-            # Calculate coherence
-            coherence = calculate_coherence_score(sentences, groups, topic_model)
-            
-            # Prepare result
-            result = {
-                'config': config,
-                'topic_sizes': [len(group) for group in groups.values()],
-                'coherence_score': coherence,
-            }
-            results.append(result)
-
-            print(result)
-            
-        except Exception as e:
-            print(f"Experiment failed with config {config}: {e}")
-    
-    return results
