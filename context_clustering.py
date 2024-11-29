@@ -6,6 +6,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import KeyBERTInspired
 from nltk import word_tokenize          
 from nltk.stem import WordNetLemmatizer 
+import gensim.corpora as corpora
+from gensim.models.coherencemodel import CoherenceModel
 
 # https://github.com/MaartenGr/BERTopic/issues/286
 class LemmaTokenizer:
@@ -68,5 +70,41 @@ def cluster_sentences(sentences, min_topic_size=8):
         if topics[i] == -1: continue # Skip outliers
         groups[topics[i]] = groups[topics[i]] + [sentence]
     
+    coherence = calculate_coherence_score(sentences, groups, topic_model)
+    print(f"Coherence score: {coherence}")
+
     # [[sent1, sent2], [sent3, sent4], ...]
     return list(groups.values())
+
+def calculate_coherence_score(sentences, groups, topic_model):
+    """
+    Coherence score tells you how well the words in a topic are related to each other. 
+    0 means no relation (e.g. random words), 1 means perfect relation (e.g. synonyms).
+    https://www.reddit.com/r/LanguageTechnology/comments/ap36l1/what_is_a_good_coherence_score_for_an_lda_model/
+    https://stackoverflow.com/questions/54762690/evaluation-of-topic-modeling-how-to-understand-a-coherence-value-c-v-of-0-4
+    """
+
+    # Get top words for each topic
+    top_words = []
+    for group in groups:
+        topic = topic_model.get_topic(group)
+        words = [word for word, prob in topic]
+        top_words.append(words)
+    
+    # https://stackoverflow.com/questions/70548316/gensim-coherencemodel-gives-valueerror-unable-to-interpret-topic-as-either-a-l
+    vectorizer = topic_model.vectorizer_model
+    analyzer = vectorizer.build_analyzer()
+
+    texts = [analyzer(doc) for doc in sentences]
+    dictionary = corpora.Dictionary(texts)
+    corpus = [dictionary.doc2bow(text) for text in texts]
+
+    coherence_model = CoherenceModel(
+        topics=top_words,
+        corpus=corpus,
+        texts=texts,
+        dictionary=dictionary,
+        coherence="c_v",
+    )
+
+    return coherence_model.get_coherence()
