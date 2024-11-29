@@ -198,7 +198,7 @@ def add_groups(page, groups, num_groups, max_height):
         p1=(MARGIN_SIDES, MARGIN_TOP),
         p2=(page.rect.width - MARGIN_SIDES, MARGIN_TOP)
         )
-        y_position += group_height + vertical_margin
+        y_position += group_height + vertical_margin + 5
     # Return number of groups added
     return n
 
@@ -206,6 +206,8 @@ def add_groups(page, groups, num_groups, max_height):
 def generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page):
     '''
     Generates a PDF document and saves it to `output_path`
+    Headers and footers can be customised with image and text.
+    Number of image + text boxes per page can be specified.
 
     Parameters:
     - output_path: Desired path of the output file
