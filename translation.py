@@ -8,7 +8,7 @@ import os
 import re
 from dotenv import load_dotenv
 from tqdm import tqdm
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 
 
 load_dotenv()
