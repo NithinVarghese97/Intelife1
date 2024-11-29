@@ -235,40 +235,41 @@ def iterative_translation(input_text: str, n_iterations: int = 3,
     return results
 
 
-def save_refinement_history(results: List[Tuple[str, Dict[str, Any]]], filename: str = "translation_history.txt"):
-    """Save the refinement history to a file."""
+def save_refinement_history(results: List[Tuple[str, Dict[str, Any]]], filename: str = "translation_history.txt") -> Optional[str]:
+    last_quoted_line = None
+    
     with open(filename, 'w', encoding='utf-8') as f:
         f.write("=== Translation Refinement History ===\n\n")
         for i, (text, metadata) in enumerate(results):
             f.write(f"\n--- Stage: {metadata['stage']} ---\n")
+            
+            # Check each line in the text for quotes
+            for line in text.split('\n'):
+                line = line.strip()
+                if line.startswith('"') and line.endswith('"'):
+                    last_quoted_line = line
+            
             f.write(text + "\n")
+            
             if i > 0 and "feedback" in metadata:
                 f.write("\nFeedback from previous version:\n")
-                f.write(metadata["feedback"]["full_feedback"] + "\n")
+                feedback = metadata["feedback"]["full_feedback"]
+                f.write(feedback + "\n")
+                
+                # Also check feedback for quoted lines
+                for line in feedback.split('\n'):
+                    line = line.strip()
+                    if line.startswith('"') and line.endswith('"'):
+                        last_quoted_line = line
+            
             f.write("\n" + "="*50 + "\n")
-
-
-def extract_translation(input_list):
-    improved_versions = []
     
-    for item in input_list:
-        feedback = item[1].get('feedback', {})
-        improved_version = feedback.get('full_feedback', '')
-        
-        match = re.search(r"### Improved Version of the Translation:\n\n\"([^\"]+)\"", improved_version)
-        
-        if match:
-            improved_versions.append(match.group(1))
-    
-    return improved_versions
+    return last_quoted_line
 
 
 def translate(input_text):
     # Run iterative translation
     results = iterative_translation(input_text, n_iterations=3)
-    opt = extract_translation(results)
-    
-    # Save results
-    save_refinement_history(results)
+    opt = save_refinement_history(results)
 
     return opt
