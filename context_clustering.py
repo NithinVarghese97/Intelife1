@@ -2,6 +2,7 @@ from bertopic import BERTopic
 from sentence_transformers import SentenceTransformer
 from sklearn.preprocessing import normalize
 from hdbscan import HDBSCAN
+from math import log
 from umap import UMAP
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import KeyBERTInspired
@@ -56,9 +57,10 @@ def cluster_sentences(sentences, config={}):
 
     umap_model = UMAP(random_state=42)
 
+    # https://www.reddit.com/r/datascience/comments/5sfj0y/hdbscan_cluster_still_unclear_to_me_how_to_chose/
     hdbscan_model = HDBSCAN(
-        min_cluster_size=config.get('min_cluster_size', 8),
-        min_samples=config.get('min_samples', 8),
+        min_cluster_size=config.get('min_cluster_size', 10),
+        min_samples=config.get('min_samples', int(log(len(sentences)))),
         cluster_selection_epsilon=config.get('cluster_selection_epsilon', 0.0),
         cluster_selection_method=config.get('cluster_selection_method', "leaf"),
         prediction_data=True,
