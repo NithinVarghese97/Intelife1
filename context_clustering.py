@@ -7,6 +7,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import KeyBERTInspired
 from nltk import word_tokenize          
 from nltk.stem import WordNetLemmatizer 
+from nltk.corpus import stopwords
 import gensim.corpora as corpora
 from gensim.models.coherencemodel import CoherenceModel
 
@@ -63,8 +64,12 @@ def cluster_sentences(sentences, config={}):
         prediction_data=True,
     )
 
+    stop_words = stopwords.words('english')
+    domain_specific_stopwords = [] # e.g. 'disability', 'service', 'intellectual'. Make sure you know what you're doing!
+    stop_words.extend(domain_specific_stopwords)
+
     vectorizer_model = CountVectorizer(
-        stop_words="english",
+        stop_words=stop_words,
         tokenizer=LemmaTokenizer(),
         ngram_range=config.get('ngram_range', (1, 3)),
         max_df=config.get('max_df', 1.0),
@@ -79,9 +84,13 @@ def cluster_sentences(sentences, config={}):
         hdbscan_model=hdbscan_model,
         vectorizer_model=vectorizer_model,
         representation_model=representation_model,
+        nr_topics=config.get('nr_topics', 20),
     )
 
     topics, probs = topic_model.fit_transform(sentences, embeddings)
+
+    # removing stopwords from topic representation
+    topic_model.update_topics(sentences, vectorizer_model=vectorizer_model)
 
     print(topic_model.get_topic_info())
 
