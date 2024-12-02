@@ -13,18 +13,19 @@
 
         <!-- File Input -->
         <div>
-            <label for="pdfInput" class="block text-md text-center font-medium text-gray-700 mb-2">Upload PDF</label>
-            {{ form.pdf_file(class_="block w-full text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400", id="pdfInput", accept=".pdf,.docx") }}
-            
-            {% for error in form.pdf_file.errors %}
-            <div class="text-sm text-red-500 mt-1">{{ error }}</div>
-            {% endfor %}
+            <label for="pdfInput" class="block text-md text-center font-medium text-gray-700 mb-2">Upload File</label>
+            <input 
+                id="pdfInput" 
+                type="file" 
+                accept=".pdf, .docx" 
+                class="block w-full text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            >
         </div>
 
         <!-- PDF Display -->
         <div id="pdfDisplay" class="border border-dashed border-gray-300 rounded-lg p-4 text-gray-500 text-center">
             <!-- Placeholder for the PDF -->
-            <p class="text-sm">The PDF will be displayed here</p>
+            <p class="text-sm">The PDF will be displayed here</p>   
         </div>
 
         <!-- Submit Button -->
@@ -37,33 +38,42 @@
     </form>
 
     <script>
-        document.getElementById('pdfInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file && file.type === "application/pdf") {
-                const fileURL = URL.createObjectURL(file);
-                // Store the PDF URL in sessionStorage
-                sessionStorage.setItem('pdfFileURL', fileURL);
-    
-                // Display the PDF in the upload page
-                document.getElementById('pdfDisplay').style.cssText = "width: 100%; height: 500px; border: 1px solid #ccc;";
-                document.getElementById('pdfDisplay').innerHTML = `
+        document.getElementById('pdfInput').addEventListener('change', async function(event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+            alert("Please select a file!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('pdf_file', file);
+
+        try {
+            const response = await fetch('{{ url_for("upload_file") }}', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json(); // Parse JSON response
+            if (response.ok) {
+                const fileUrl = data.file_url;
+                // Render the file dynamically in an iframe
+                const pdfDisplay = document.getElementById('pdfDisplay');
+                pdfDisplay.innerHTML = `
                     <iframe 
-                        src="${fileURL}#toolbar=0" 
+                        src="${fileUrl}" 
                         width="100%" 
-                        height="100%" 
+                        height="500px" 
                         style="border: none;">
                     </iframe>
                 `;
             } 
-            else if (file && file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-                document.getElementById('pdfDisplay').style.cssText = "width: 100%; height: 500px; border: 1px solid #ccc;";
-                document.getElementById('pdfDisplay').innerHTML = `
-                    <p class="text-sm text-red-500">Docx file uploaded.</p>
-                `;
-            }else {
-                alert("Please upload a valid PDF file.");
-            }
-        });
+        } catch (error) {
+            console.error("Error:", error);
+            alert("An error occurred while uploading or converting the file.");
+        }
+    });
     </script>
 </div>
 {% endblock %}

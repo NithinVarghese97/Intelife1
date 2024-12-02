@@ -50,42 +50,56 @@ def process_pdf(pdf_file_path):
 
     UPLOAD_PROGRESS['progress'] = 100
 
-@app.route('/', methods=['GET', 'POST'])
-def upload():
-    form = PDFUploadForm()
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'pdf_file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
 
-    if request.method == 'POST' and form.validate_on_submit():
-        UPLOAD_PROGRESS['progress'] = 0  # Reset progress
+    file = request.files['pdf_file']
+    file_extension = os.path.splitext(file.filename)[1].lower()
 
-        # Get the uploaded file
-        uploaded_file = request.files['pdf_file']
-
-        # Secure the filename
-        filename = secure_filename(uploaded_file.filename)
-        file_extension = os.path.splitext(filename)[1].lower()
-
-        # Ensure the /files directory exists
-        files_dir = os.path.join(os.path.dirname(__file__), 'files')
+    if file and file_extension in {'.pdf', '.docx'}:
+        files_dir = os.path.join(os.path.dirname(__file__), 'static/files')
         if not os.path.exists(files_dir):
             os.makedirs(files_dir)
 
-        # Save the uploaded file to the /files directory
-        file_path = os.path.join(files_dir, filename)
-        uploaded_file.save(file_path)
-        
-        if file_extension == '.docx':
-            # Convert DOCX to PDF and then process
-            convert_to_pdf(file_path)
-            file_path = file_path.replace('.docx', '.pdf')
-        
+        # Remove uploaded files stored on server side.
+        temp_filenames = ["upload.pdf", "upload.docx"]
+        for filename in temp_filenames:
+            file_path = os.path.join(files_dir, filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
+        # Define a static file name and save the uploaded file to that path
+        static_file_name = 'upload.pdf' if file_extension == '.pdf' else 'upload.docx'
+        file_path = os.path.join(files_dir, static_file_name)
+        file.save(file_path)
+
+        # Convert DOCX to PDF if it's a DOCX file
+        if file_extension == '.docx':
+            # Convert the DOCX to PDF
+            thread = threading.Thread(target=convert_to_pdf, args=(file_path,))
+            thread.start()
+            # Update the static path to point to the PDF version
+            file_path = file_path.replace('.docx', '.pdf')
+            thread.join()
+
+        # Return the static file path (relative or absolute as needed)
+        pdf_url = "static/files/upload.pdf"
+        return jsonify({'file_url': pdf_url}), 200
+
+    return jsonify({'error': f"Unsupported file type: {file_extension}"}), 400
+
+
+@app.route('/', methods=['GET', 'POST'])
+def process_pdf():
+        UPLOAD_PROGRESS['progress'] = 0  # Reset progress
+        file_path = "static/files/upload.pdf"
         # Start the background thread for processing
         thread = threading.Thread(target=process_pdf, args=(file_path,))
         thread.start()
 
         return render_template('processing.html')  # Render a template that shows the progress bar
-
-    return render_template('upload.html', form=form)
 
 @app.route('/progress', methods=['GET'])
 def get_progress():
