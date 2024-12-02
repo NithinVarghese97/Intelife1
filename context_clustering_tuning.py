@@ -1,5 +1,6 @@
 import optuna
 import numpy as np
+import os
 from sklearn.model_selection import cross_val_score
 from context_clustering import cluster_sentences
 
@@ -19,30 +20,35 @@ def objective(trial):
     """
     # Define hyperparameter search space
     config = {
-        'min_cluster_size': trial.suggest_int('min_cluster_size', 3, 20),
-        'min_samples': trial.suggest_int('min_samples', 3, 20),
+        'min_cluster_size': trial.suggest_int('min_cluster_size', 2, 20),
+        'min_samples': trial.suggest_int('min_samples', 2, 20),
         'cluster_selection_epsilon': trial.suggest_float('cluster_selection_epsilon', 0.0, 0.5),
         'cluster_selection_method': trial.suggest_categorical(
             'cluster_selection_method', 
-            ["leaf", "eom"]
+            ['eom', 'leaf']
         ),
-        'ngram_range': trial.suggest_categorical('ngram_range', [
-            (1, 1), (1, 2), (1, 3)
-        ]),
-        'max_df': trial.suggest_float('max_df', 0.5, 1.0),
+        'ngram_range': trial.suggest_categorical(
+            'ngram_range', 
+            [(1, 1), (1, 2), (1, 3), (2, 3), (2, 2), (3, 3)]
+        ),
+        'nr_topics': trial.suggest_int('nr_topics', 3, 20)
     }
     
     # Perform clustering
     try:
-        groups, coherence = cluster_sentences(sentences, config)
+        total_coherence = 0
+        file_count = 0
+        for filename in os.listdir('dir/'):
+            if filename.endswith('.txt'):
+                with open(os.path.join('dir/', filename), 'r') as f:
+                    sentences = f.readlines()
+                groups, coherence = cluster_sentences(sentences, config)
+                total_coherence += coherence
+                file_count += 1
         
-        # Penalize very small or very large number of groups
-        group_penalty = min(
-            1.0, 
-            max(0.1, 1 - abs(len(groups) - len(sentences) * 0.1) / len(sentences))
-        )
+        average_coherence = total_coherence / file_count if file_count > 0 else -np.inf
         
-        return coherence * group_penalty
+        return average_coherence
     
     except Exception as e:
         print(f"Trial failed: {e}")
@@ -97,10 +103,6 @@ def tune_hyperparameters(
     }
 
 if __name__ == "__main__":
-    # Load sentences from a text file
-    with open('app/text/output.txt', 'r') as f:
-        sentences = f.readlines()
-    
     # Perform hyperparameter tuning
-    best_params = tune_hyperparameters(sentences, n_trials=50, timeout=3600)
+    best_params = tune_hyperparameters(None, n_trials=50, timeout=3600)
     print(best_params)
