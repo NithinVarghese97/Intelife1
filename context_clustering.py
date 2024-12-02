@@ -66,7 +66,7 @@ def cluster_sentences(sentences, config={}):
     vectorizer_model = CountVectorizer(
         stop_words="english",
         tokenizer=LemmaTokenizer(),
-        ngram_range=config.get('ngram_range', (1, 2)),
+        ngram_range=config.get('ngram_range', (1, 3)),
         max_df=config.get('max_df', 1.0),
         min_df=config.get('min_df', 1),
     )
@@ -79,17 +79,24 @@ def cluster_sentences(sentences, config={}):
         hdbscan_model=hdbscan_model,
         vectorizer_model=vectorizer_model,
         representation_model=representation_model,
-        nr_topics=config.get('nr_topics', 20),
     )
 
     topics, probs = topic_model.fit_transform(sentences, embeddings)
 
     print(topic_model.get_topic_info())
 
-    groups = {t: [] for t in range(max(topics)+1)}
+    groups = {t: [] for t in range(-1, max(topics)+1)}
     for i, sentence in enumerate(sentences):
-        if topics[i] == -1: continue
         groups[topics[i]] = groups[topics[i]] + [sentence]
+    
+    # If there is only one group, it's the whole document
+    if len(groups) == 1:
+        result = list(groups.values())
+        coherence = calculate_coherence_score(sentences, groups, topic_model)
+        return result, coherence
+    
+    # Remove outliers
+    groups = {k: v for k, v in groups.items() if k != -1}
     
     result = list(groups.values())
     coherence = calculate_coherence_score(sentences, groups, topic_model)
