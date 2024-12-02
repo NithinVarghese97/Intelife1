@@ -16,9 +16,6 @@ image_dir = "app/static/images"
 if not os.path.isdir(image_dir):
     os.mkdir(image_dir)
 
-# Print the directory to save to
-print(f"{image_dir=}")
-
 # Function to apply prompt engineering
 def engineer_prompt(base_prompt):
     # General instructions for the prompts
@@ -30,8 +27,9 @@ def engineer_prompt(base_prompt):
     return f"{general_instructions[0]} {base_prompt}{general_instructions[1]}"
 
 # Function to generate images from a list of prompts
-def generate_images_from_prompts(prompts):
+def generate_images_from_prompts(prompts, progress_callback=None):
     images = []
+    total_prompts = len(prompts)
 
     for i, base_prompt in enumerate(prompts):
         # Engineer the prompt
@@ -57,12 +55,16 @@ def generate_images_from_prompts(prompts):
         img = img.resize((512, 512), Image.LANCZOS)
 
         # Define a unique name for each generated image
-        generated_image_name = f"section_{i}.png"
+        generated_image_name = f"section_{i}.jpg"
         generated_image_filepath = os.path.join(image_dir, generated_image_name)
 
         # Save the resized image
         img.save(generated_image_filepath)
         
         images.append((engineered_prompt, generated_image_filepath))
+        
+        # Update the progress
+        if progress_callback:
+            progress_callback(i +1, total_prompts)
 
     return images
