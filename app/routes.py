@@ -78,11 +78,7 @@ def upload_file():
         # Convert DOCX to PDF if it's a DOCX file
         if file_extension == '.docx':
             # Convert the DOCX to PDF
-            thread = threading.Thread(target=convert_to_pdf, args=(file_path,))
-            thread.start()
-            # Update the static path to point to the PDF version
-            file_path = file_path.replace('.docx', '.pdf')
-            thread.join()
+            convert_to_pdf(file_path)
 
         # Return the static file path (relative or absolute as needed)
         pdf_url = "static/files/upload.pdf"
@@ -92,14 +88,21 @@ def upload_file():
 
 
 @app.route('/', methods=['GET', 'POST'])
-def process_pdf():
+def process():
+    form = PDFUploadForm()
+
+    if request.method == 'POST' and form.validate_on_submit():
         UPLOAD_PROGRESS['progress'] = 0  # Reset progress
+
         file_path = "static/files/upload.pdf"
+
         # Start the background thread for processing
         thread = threading.Thread(target=process_pdf, args=(file_path,))
         thread.start()
 
         return render_template('processing.html')  # Render a template that shows the progress bar
+
+    return render_template('upload.html', form=form)
 
 @app.route('/progress', methods=['GET'])
 def get_progress():
