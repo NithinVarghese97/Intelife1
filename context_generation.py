@@ -17,7 +17,14 @@ def extract(pdf_path):
     return text
 
 def preprocess(text):
-    sentences = nltk.sent_tokenize(text)
+    nltk_tokenized_sentences = nltk.sent_tokenize(text)
+    sentences = []
+    for sent in nltk_tokenized_sentences:
+        # two or more consecutive newline characters indicate a new paragraph, which should be a new sentence
+        sent = re.split(r'\n\n+', sent)
+        sentences.extend(sent)
+
+    sentences = [subsent.strip() for sent in sentences for subsent in re.split(r'\n\n+\-', sent)]
     cleaned_sentences = [clean(sent) for sent in sentences]
     filtered_sentences = [sent for sent in cleaned_sentences if sent.strip() != ""]
 
@@ -38,7 +45,7 @@ def clean(text):
     # remove apostrophes or hyphens that are not part of a word (i.e. save contracted and hyphenated words)
     text = re.sub(r"(?<!\w)['’‑-]|['’‑-](?!\w)", "", text)
     # remove non-alphabetic characters except for newlines, spaces, apostrophes, and hyphens
-    text = re.sub(r"[^\r\na-z0-9\s'’\-]", ' ', text)
+    text = re.sub(r"[^\r\na-z\s'’\-]", ' ', text)
     # remove extra whitespaces
     text = re.sub(r'\s+', ' ', text)
     text = text.strip()
