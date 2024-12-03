@@ -1,7 +1,9 @@
 from app import app
 from flask import render_template, request, redirect, send_file, jsonify
 from app.forms import PDFUploadForm
-from app.converter import convert
+from app.summariser import summarise
+from generate_images import generate_images_from_prompts  # Import your function
+from pdf_generation import compile_info_for_pdf
 from generate_images import generate_images_from_prompts
 from pdf_generation import compile_info_for_pdf, update_text, caller
 
@@ -22,7 +24,7 @@ def process_pdf(pdf_file_path):
     time.sleep(1)  # Simulate processing time
     
     # Process the PDF and get results
-    results = convert(pdf_file_path)
+    results = summarise(pdf_file_path)
 
     UPLOAD_PROGRESS['progress'] = 40
     time.sleep(1)  # Simulate processing time
