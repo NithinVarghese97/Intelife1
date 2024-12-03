@@ -1,6 +1,7 @@
 from openai import OpenAI  # OpenAI Python library to make API calls
 import requests  # used to download images
 import os  # used to access filepaths
+from entity_rec import translate
 from PIL import Image  # used to print and edit images
 from io import BytesIO
 from dotenv import load_dotenv
@@ -16,16 +17,6 @@ image_dir = "app/static/images"
 if not os.path.isdir(image_dir):
     os.mkdir(image_dir)
 
-# Function to apply prompt engineering
-def engineer_prompt(base_prompt):
-    # General instructions for the prompts
-    general_instructions = (
-        "A clean, minimalistic image with no text, no labels, and no clutter. Focus on the subject only, with a plain background and simple details.",
-        "No text, no captions, no labels, no signage, and no writing anywhere in the image."
-    )
-    # Combine the general instructions with the specific prompt
-    return f"{general_instructions[0]} {base_prompt}{general_instructions[1]}"
-
 # Function to generate images from a list of prompts
 def generate_images_from_prompts(prompts, progress_callback=None):
     images = []
@@ -33,7 +24,7 @@ def generate_images_from_prompts(prompts, progress_callback=None):
 
     for i, base_prompt in enumerate(prompts):
         # Engineer the prompt
-        engineered_prompt = engineer_prompt(base_prompt)
+        engineered_prompt = translate(base_prompt)
 
         # Generate the image using the OpenAI API
         generation_response = client.images.generate(
