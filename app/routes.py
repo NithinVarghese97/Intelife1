@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, send_file, jsonify
+from app import app
+from flask import render_template, request, redirect, send_file, jsonify
 from app.forms import PDFUploadForm
 from app.summariser import summarise
 from generate_images import generate_images_from_prompts  # Import your function
@@ -9,9 +10,6 @@ from pdf_generation import compile_info_for_pdf, update_text, caller
 import os
 import time
 import threading
-
-
-index_bp = Blueprint('index', __name__)
 
 UPLOAD_PROGRESS = {"progress": 0}
 
@@ -52,7 +50,7 @@ def process_pdf(pdf_file_path):
 
     UPLOAD_PROGRESS['progress'] = 100
 
-@index_bp.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def upload():
     form = PDFUploadForm()
 
@@ -79,11 +77,11 @@ def upload():
 
     return render_template('upload.html', form=form)
 
-@index_bp.route('/progress', methods=['GET'])
+@app.route('/progress', methods=['GET'])
 def get_progress():
     return jsonify(UPLOAD_PROGRESS)
 
-@index_bp.route('/choose-template', methods=['GET', 'POST'])
+@app.route('/choose-template', methods=['GET', 'POST'])
 def choose_template():
     if request.method == 'POST':
         # Get the selected option from the form
@@ -97,7 +95,7 @@ TOTAL_PAGES = None
 page_text_boxes = None
 template = None
 
-@index_bp.route('/display')
+@app.route('/display')
 def display():
     global TOTAL_PAGES, page_text_boxes, all_groups, mapping, template
 
@@ -126,7 +124,7 @@ def display():
         selected_template=int(template)
     )
 
-@index_bp.route('/submit', methods=['POST'])
+@app.route('/submit', methods=['POST'])
 def submit():
     # Get the current page from the form (ensure it's valid)
     page = int(request.form.get('page', 1))
@@ -149,7 +147,7 @@ def submit():
     # Redirect back to the same page
     return redirect(f"/display?page={page}")
 
-@index_bp.route('/download-pdf')
+@app.route('/download-pdf')
 def download_pdf():
     pdf_path = "static/pdf/output.pdf"  # Update this to match your PDF file's location
     return send_file(pdf_path, as_attachment=True, download_name="output.pdf")

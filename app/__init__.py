@@ -1,16 +1,7 @@
 from flask import Flask
+from config import Config
 
-def create_app(config_class=None):
-    app = Flask(__name__, static_folder='static')
-    
-    # Load the configuration
-    if config_class:
-        app.config.from_object(config_class)
-    else:
-        from config import Config
-        app.config.from_object(Config)
-    
-    from app.routes import index_bp
-    app.register_blueprint(index_bp)
-    
-    return app
+app = Flask(__name__, static_folder='static')
+app.config.from_object(Config)
+
+from app import routes
