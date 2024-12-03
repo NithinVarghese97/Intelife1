@@ -23,7 +23,8 @@ def get_refinement_criteria() -> str:
     - Specific issues identified
     - Suggested improvements
 
-    Then, provide an improved version of the translation that addresses these issues."""
+    Then, provide an improved version of the translation that addresses these issues.
+    Ensure the improved version of the translation is wrapped in double quotes."""
 
 
 def refine_translation(client: OpenAI, current_text: str, original_input: str, 
