@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, request, redirect, send_file, json
 from app.forms import PDFUploadForm
 from app.summariser import summarise
 from generate_images import generate_images_from_prompts  # Import your function
-from pdf_generation import compile_info_for_pdf
 from generate_images import generate_images_from_prompts
 from pdf_generation import compile_info_for_pdf, update_text, caller
 

@@ -30,6 +30,11 @@ def replace_pdf_text(input_pdf_path, output_pdf_path, body_text_locations, new_t
         if text_index >= len(new_texts):
             break  # No more new texts to add
     
+    # Ensure the output directory exists
+    output_dir = os.path.dirname(output_pdf_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
     # Save the modified PDF
     doc.save(output_pdf_path)
     doc.close()
@@ -219,6 +224,11 @@ def generate_pdf(output_path, header_image, header_text, footer_image, footer_te
 
         # Advance the group index by the number of groups placed on this page
         i += n
+
+    # Ensure the output directory exists
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     # Save the document
     doc.save(output_path)
