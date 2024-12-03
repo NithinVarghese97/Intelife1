@@ -60,9 +60,11 @@ def get_refinement_criteria() -> str:
     3. Readability: Is it structured in a way that's easy to follow?
     4. Consistency: Is the simplification level consistent throughout?
     5. Intraclass separation: Although each sentence in the translation have the same background meaning, do
-    they still have enough separation between them so that each sentence can repersent a (trivial) sub-concept?
-    6. Length: Each sub-concept must only have one corresponding sentence and the sub-concept themselves must be important enough to be included. Is the number of sentences too many and can be reduced?
+    they still have enough separation between them so that each sentence can repersent a sub-concept?
+    6. Length: Each sub-concept must only have one corresponding sentence and the sub-concept themselves must be important enough to be included. 
+    Is the number of sentences too many and can be reduced? Can some of the unimportant sub-concepts and their corresponding sentences be excluded?
     7. Format: Is the resulting translation in plain sentences that are period seprated and in one paragraph only (no dot points, no colon, etc)?
+    8. Vocabulary: Can the words used be replaced by much simpler synonyms while retaining accurate meanings? 
 
     For each criterion, provide:
     - A score (1-5)

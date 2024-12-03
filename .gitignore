@@ -28,6 +28,9 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+nltk_data
+poppler-24.08.0
+processed
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

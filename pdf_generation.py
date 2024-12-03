@@ -1,5 +1,8 @@
 import fitz
 import os 
+abs_path = os.path.abspath('.')
+poppler_path = os.path.join(abs_path, "poppler-24.08.0", "Library", "bin")
+os.environ["PATH"] = poppler_path + os.pathsep + os.environ['PATH']
 from pdf2image import convert_from_path
 
 def replace_pdf_text(input_pdf_path, output_pdf_path, body_text_locations, new_texts):
