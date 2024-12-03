@@ -1,0 +1,214 @@
+=== Translation Refinement History ===
+
+
+--- Stage: initial ---
+User input: Introduction / Purpose
+Disability advocacy helps protect and promote the rights of people with disabilities. Independent advocates, funded by the government, work only for the person they support. They help those who face big challenges or can't speak up for themselves, especially if they don't have family or friends to help them. They can get support from these advocates.
+Intelife also values the role of families, friends, and other providers in protecting the rights of people with disabilities. If informal advocates need help, they should first talk to Intelife. If they still can't solve the problem, they should contact an independent advocate.
+Scope
+This policy applies to all areas of Intelife’s programs that provide support and services to people with disabilities, working together with their support network and advocates.
+Policy Statements
+Every participant can choose an advocate, including an independent one, and have them present.
+Intelife helps people get independent advocacy services. They work with individuals to give feedback, make complaints, or solve problems without fear of bad outcomes.
+Intelife recognizes the important role of advocates. They understand that people from different cultural and language backgrounds and people with disabilities might need help to use advocacy services.
+Intelife aims to help people with disabilities:
+● Make their own informed choices, be in control, and be as independent as possible with their chosen support network and advocate
+● Join in community life as they choose and get services and supports that fit their needs, goals, and preferences
+● Be treated fairly and safely, without violence, abuse, neglect, exploitation, or discrimination.
+Intelife is also involved in advocating for better policies and services for people with disabilities in:
+● Government and non-government sectors
+● Promoting positive views and understanding of disabilities in the wider community.
+
+==================================================
+
+--- Stage: refinement_1 ---
+1. **Clarity**: Score - 4
+   - **Issue**: Some sentences could be simplified further for better understanding.
+   - **Suggested Improvement**: Use more straightforward language and shorter sentences.
+
+2. **Accuracy**: Score - 4
+   - **Issue**: General meaning is preserved but some nuances about the different roles of advocates and Intelife's specific commitments could be clearer.
+   - **Suggested Improvement**: Include brief mentions of key roles and distinctions between types of advocacy.
+
+3. **Readability**: Score - 4
+   - **Issue**: Some areas have complex sentence structures that might confuse the reader.
+   - **Suggested Improvement**: Break down complex sentences into simpler, standalone sentences.
+
+4. **Consistency**: Score - 4
+   - **Issue**: The level of simplification varies; some parts are overly simplified while others retain moderate complexity.
+   - **Suggested Improvement**: Ensure uniform simplicity across the text.
+
+5. **Intraclass Separation**: Score - 3
+   - **Issue**: Some sentences are closely intertwined in meaning, reducing distinct separation of concepts.
+   - **Suggested Improvement**: Clearly separate concepts to ensure each sentence stands alone with a unique sub-concept.
+
+6. **Length**: Score - 3
+   - **Issue**: The translation could be more concise; some sentences could be merged or omitted without losing essential information.
+   - **Suggested Improvement**: Condense similar ideas and remove repetitive phrases.
+
+7. **Format**: Score - 2
+   - **Issue**: The translation uses bullet points and lists which were supposed to be avoided as per the guidelines.
+   - **Suggested Improvement**: Convert lists to plain sentences and ensure the text flows in a paragraph format without bullet points.
+
+**Improved Translation**:
+"Disability advocacy protects the rights of people with disabilities. Independent advocates, funded by the government, support people who can't speak up for themselves and don't have family or friends to help. Intelife values how families and friends also help protect these rights. They should contact Intelife first for help, and if needed, get an independent advocate. Intelife's policies cover all areas where they support people with disabilities. Everyone can choose and have an advocate. Intelife helps people get advocacy services to provide feedback, make complaints, or solve problems safely. They recognize the need for advocates especially for those from diverse backgrounds. Intelife works to ensure all people with disabilities can make their own choices, join in community activities, and receive fair treatment. They also advocate for better government and private sector policies towards disabilities and promote understanding in the community."
+
+Feedback from previous version:
+1. **Clarity**: Score - 4
+   - **Issue**: Some sentences could be simplified further for better understanding.
+   - **Suggested Improvement**: Use more straightforward language and shorter sentences.
+
+2. **Accuracy**: Score - 4
+   - **Issue**: General meaning is preserved but some nuances about the different roles of advocates and Intelife's specific commitments could be clearer.
+   - **Suggested Improvement**: Include brief mentions of key roles and distinctions between types of advocacy.
+
+3. **Readability**: Score - 4
+   - **Issue**: Some areas have complex sentence structures that might confuse the reader.
+   - **Suggested Improvement**: Break down complex sentences into simpler, standalone sentences.
+
+4. **Consistency**: Score - 4
+   - **Issue**: The level of simplification varies; some parts are overly simplified while others retain moderate complexity.
+   - **Suggested Improvement**: Ensure uniform simplicity across the text.
+
+5. **Intraclass Separation**: Score - 3
+   - **Issue**: Some sentences are closely intertwined in meaning, reducing distinct separation of concepts.
+   - **Suggested Improvement**: Clearly separate concepts to ensure each sentence stands alone with a unique sub-concept.
+
+6. **Length**: Score - 3
+   - **Issue**: The translation could be more concise; some sentences could be merged or omitted without losing essential information.
+   - **Suggested Improvement**: Condense similar ideas and remove repetitive phrases.
+
+7. **Format**: Score - 2
+   - **Issue**: The translation uses bullet points and lists which were supposed to be avoided as per the guidelines.
+   - **Suggested Improvement**: Convert lists to plain sentences and ensure the text flows in a paragraph format without bullet points.
+
+**Improved Translation**:
+"Disability advocacy protects the rights of people with disabilities. Independent advocates, funded by the government, support people who can't speak up for themselves and don't have family or friends to help. Intelife values how families and friends also help protect these rights. They should contact Intelife first for help, and if needed, get an independent advocate. Intelife's policies cover all areas where they support people with disabilities. Everyone can choose and have an advocate. Intelife helps people get advocacy services to provide feedback, make complaints, or solve problems safely. They recognize the need for advocates especially for those from diverse backgrounds. Intelife works to ensure all people with disabilities can make their own choices, join in community activities, and receive fair treatment. They also advocate for better government and private sector policies towards disabilities and promote understanding in the community."
+
+==================================================
+
+--- Stage: refinement_2 ---
+1. **Clarity**: Score - 4
+   - **Issue**: Most sentences are clear, but some might still be complex for readers with lower literacy.
+   - **Suggested Improvement**: Simplify complex phrases and reduce dependency on compound structures.
+
+2. **Accuracy**: Score - 5
+   - No significant issues. The translation captures the essence and specifics of the original text well.
+
+3. **Readability**: Score - 4
+   - **Issue**: The flow between sentences could be smoother to enhance readability.
+   - **Suggested Improvement**: Adjust transitions between sentences to make the narrative more cohesive.
+
+4. **Consistency**: Score - 4
+   - **Issue**: There is slight variability in the simplicity of language used across the text.
+   - **Suggested Improvement**: Standardize the level of language simplicity throughout the text.
+
+5. **Intraclass Separation**: Score - 5
+   - Each sentence presents a distinct sub-concept clearly, fulfilling this criterion effectively.
+
+6. **Length**: Score - 4
+   - **Issue**: There are a few redundant phrases that could be condensed.
+   - **Suggested Improvement**: Streamline sentences to remove redundancy and unnecessary elaboration.
+
+7. **Format**: Score - 5
+   - The text adheres to the format requirements, using plain sentences separated by periods in a single paragraph.
+
+**Improved Translation**:
+"Disability advocacy protects the rights of people with disabilities. Independent advocates help those who can't speak up for themselves and have no one else to help them. Intelife values the role of families and friends in supporting these rights. They suggest contacting Intelife first, and if more help is needed, to seek an independent advocate. Intelife's policies apply where they support people with disabilities. Everyone can choose their own advocate to be present with them. Intelife helps people find advocacy services to safely give feedback, complain, or resolve issues. They recognize that people from diverse backgrounds may need special help from advocates. Intelife ensures that people with disabilities can make their own choices, join community activities, and are treated fairly. They also work to improve government and private policies on disabilities and increase community understanding."
+
+Feedback from previous version:
+1. **Clarity**: Score - 4
+   - **Issue**: Most sentences are clear, but some might still be complex for readers with lower literacy.
+   - **Suggested Improvement**: Simplify complex phrases and reduce dependency on compound structures.
+
+2. **Accuracy**: Score - 5
+   - No significant issues. The translation captures the essence and specifics of the original text well.
+
+3. **Readability**: Score - 4
+   - **Issue**: The flow between sentences could be smoother to enhance readability.
+   - **Suggested Improvement**: Adjust transitions between sentences to make the narrative more cohesive.
+
+4. **Consistency**: Score - 4
+   - **Issue**: There is slight variability in the simplicity of language used across the text.
+   - **Suggested Improvement**: Standardize the level of language simplicity throughout the text.
+
+5. **Intraclass Separation**: Score - 5
+   - Each sentence presents a distinct sub-concept clearly, fulfilling this criterion effectively.
+
+6. **Length**: Score - 4
+   - **Issue**: There are a few redundant phrases that could be condensed.
+   - **Suggested Improvement**: Streamline sentences to remove redundancy and unnecessary elaboration.
+
+7. **Format**: Score - 5
+   - The text adheres to the format requirements, using plain sentences separated by periods in a single paragraph.
+
+**Improved Translation**:
+"Disability advocacy protects the rights of people with disabilities. Independent advocates help those who can't speak up for themselves and have no one else to help them. Intelife values the role of families and friends in supporting these rights. They suggest contacting Intelife first, and if more help is needed, to seek an independent advocate. Intelife's policies apply where they support people with disabilities. Everyone can choose their own advocate to be present with them. Intelife helps people find advocacy services to safely give feedback, complain, or resolve issues. They recognize that people from diverse backgrounds may need special help from advocates. Intelife ensures that people with disabilities can make their own choices, join community activities, and are treated fairly. They also work to improve government and private policies on disabilities and increase community understanding."
+
+==================================================
+
+--- Stage: refinement_3 ---
+**Evaluation of the Translation:**
+
+1. **Clarity**: Score - 4
+   - **Issue**: While the translation generally maintains clarity, some terms might still be too complex for a lower literacy audience, such as "independent advocate."
+   - **Suggested Improvement**: Further simplify terms and phrases to ensure they are understood by all readers.
+
+2. **Accuracy**: Score - 5
+   - No significant issues noted. The translation effectively retains the original meaning in a simpler format.
+
+3. **Readability**: Score - 4
+   - **Issue**: The text is mostly readable but can benefit from smoother transitions and clearer sentence structures for better flow.
+   - **Suggested Improvement**: Use more connectors and simpler sentence structures to enhance flow.
+
+4. **Consistency**: Score - 4
+   - **Issue**: The level of simplification varies slightly throughout the text.
+   - **Suggested Improvement**: Ensure uniform simplicity in language and terminology across the entire text.
+
+5. **Intraclass Separation**: Score - 4
+   - **Issue**: Some sentences might overlap in content slightly, reducing the distinctiveness of each sub-concept.
+   - **Suggested Improvement**: Refine sentences to ensure each one uniquely represents a single, clear sub-concept.
+
+6. **Length**: Score - 4
+   - **Issue**: Some redundancy in expressing certain concepts could be streamlined.
+   - **Suggested Improvement**: Condense similar ideas and eliminate repetitive phrases to shorten the overall length.
+
+7. **Format**: Score - 5
+   - The format is appropriate, with plain sentences that are clearly separated by periods and contained within a single paragraph.
+
+**Improved Translation**:
+"Disability advocacy helps protect the rights of people with disabilities. Independent advocates support those who cannot speak up for themselves, especially when they have no one else. Intelife also values the support from families and friends in protecting these rights. They suggest contacting Intelife first for help, and if needed, getting help from an independent advocate. Intelife’s rules apply to their support services for people with disabilities. Everyone can choose and have an advocate during meetings or discussions. Intelife helps people to use advocacy services to safely share feedback, make complaints, or solve problems. They understand that people from different backgrounds might need extra help from advocates. Intelife makes sure that people with disabilities can make their own choices, join in community life, and receive fair treatment. They also work to improve laws and attitudes about disabilities to help the community understand better."
+
+Feedback from previous version:
+**Evaluation of the Translation:**
+
+1. **Clarity**: Score - 4
+   - **Issue**: While the translation generally maintains clarity, some terms might still be too complex for a lower literacy audience, such as "independent advocate."
+   - **Suggested Improvement**: Further simplify terms and phrases to ensure they are understood by all readers.
+
+2. **Accuracy**: Score - 5
+   - No significant issues noted. The translation effectively retains the original meaning in a simpler format.
+
+3. **Readability**: Score - 4
+   - **Issue**: The text is mostly readable but can benefit from smoother transitions and clearer sentence structures for better flow.
+   - **Suggested Improvement**: Use more connectors and simpler sentence structures to enhance flow.
+
+4. **Consistency**: Score - 4
+   - **Issue**: The level of simplification varies slightly throughout the text.
+   - **Suggested Improvement**: Ensure uniform simplicity in language and terminology across the entire text.
+
+5. **Intraclass Separation**: Score - 4
+   - **Issue**: Some sentences might overlap in content slightly, reducing the distinctiveness of each sub-concept.
+   - **Suggested Improvement**: Refine sentences to ensure each one uniquely represents a single, clear sub-concept.
+
+6. **Length**: Score - 4
+   - **Issue**: Some redundancy in expressing certain concepts could be streamlined.
+   - **Suggested Improvement**: Condense similar ideas and eliminate repetitive phrases to shorten the overall length.
+
+7. **Format**: Score - 5
+   - The format is appropriate, with plain sentences that are clearly separated by periods and contained within a single paragraph.
+
+**Improved Translation**:
+"Disability advocacy helps protect the rights of people with disabilities. Independent advocates support those who cannot speak up for themselves, especially when they have no one else. Intelife also values the support from families and friends in protecting these rights. They suggest contacting Intelife first for help, and if needed, getting help from an independent advocate. Intelife’s rules apply to their support services for people with disabilities. Everyone can choose and have an advocate during meetings or discussions. Intelife helps people to use advocacy services to safely share feedback, make complaints, or solve problems. They understand that people from different backgrounds might need extra help from advocates. Intelife makes sure that people with disabilities can make their own choices, join in community life, and receive fair treatment. They also work to improve laws and attitudes about disabilities to help the community understand better."
+
+==================================================

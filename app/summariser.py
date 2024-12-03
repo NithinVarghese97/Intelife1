@@ -6,7 +6,7 @@ import os
 
 
 def split_into_sentences(text):
-    sentences = [sentence.strip() for sentence in text.split('.') if sentence.strip()]
+    sentences = [sentence.strip() + '.' for sentence in text[1:].split('.') if sentence.strip()][:-1]
     return sentences
 
 
