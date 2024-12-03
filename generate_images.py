@@ -24,7 +24,7 @@ def generate_images_from_prompts(prompts, progress_callback=None):
 
     for i, base_prompt in enumerate(prompts):
         # Engineer the prompt
-        engineered_prompt = translate(base_prompt)
+        engineered_prompt = translate(base_prompt) + " Style: photorealistic."
 
         # Generate the image using the OpenAI API
         generation_response = client.images.generate(

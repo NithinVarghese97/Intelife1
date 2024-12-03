@@ -59,7 +59,9 @@ def get_refinement_criteria() -> str:
     2. Accuracy: Does it maintain the original meaning while being simpler?
     3. Readability: Is it structured in a way that's easy to follow?
     4. Consistency: Is the simplification level consistent throughout?
-    5. Length: Easy read translation must be between 1 to 2 sentences only. Is the reuslting paragraph short?
+    5. Intraclass separation: Although each sentence in the translation have the same background meaning, do
+    they still have enough separation between them so that each sentence can repersent a (trivial) sub-concept?
+    6. Length: Is the number of sentences too many and can be easily reduced?
 
     For each criterion, provide:
     - A score (1-5)
