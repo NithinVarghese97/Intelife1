@@ -10,7 +10,7 @@ def create_app(config_class=None):
         from config import Config
         app.config.from_object(Config)
     
-    with app.app_context():
-        from app import routes
+    from app.routes import index_bp
+    app.register_blueprint(index_bp)
     
     return app
