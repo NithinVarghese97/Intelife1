@@ -94,7 +94,7 @@ def process():
     if request.method == 'POST' and form.validate_on_submit():
         UPLOAD_PROGRESS['progress'] = 0  # Reset progress
 
-        file_path = "static/files/upload.pdf"
+        file_path = "app/static/files/upload.pdf"
 
         # Start the background thread for processing
         thread = threading.Thread(target=process_pdf, args=(file_path,))
