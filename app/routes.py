@@ -1,16 +1,17 @@
-from app import app
-from flask import render_template, request, redirect, send_file, jsonify
+from flask import Blueprint, render_template, request, redirect, send_file, jsonify
 from app.forms import PDFUploadForm
 from app.summariser import summarise
 from generate_images import generate_images_from_prompts  # Import your function
+from pdf_generation import compile_info_for_pdf
 from generate_images import generate_images_from_prompts
 from pdf_generation import compile_info_for_pdf, update_text, caller
-from word2pdf import convert_to_pdf
-from werkzeug.utils import secure_filename
 
 import os
 import time
 import threading
+
+
+index_bp = Blueprint('index', __name__)
 
 UPLOAD_PROGRESS = {"progress": 0}
 
@@ -51,65 +52,38 @@ def process_pdf(pdf_file_path):
 
     UPLOAD_PROGRESS['progress'] = 100
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'pdf_file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-
-    file = request.files['pdf_file']
-    file_extension = os.path.splitext(file.filename)[1].lower()
-
-    if file and file_extension in {'.pdf', '.docx'}:
-        files_dir = os.path.join(os.path.dirname(__file__), 'static/files')
-        if not os.path.exists(files_dir):
-            os.makedirs(files_dir)
-
-        # Remove uploaded files stored on server side.
-        temp_filenames = ["upload.pdf", "upload.docx"]
-        for filename in temp_filenames:
-            file_path = os.path.join(files_dir, filename)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-        # Define a static file name and save the uploaded file to that path
-        static_file_name = 'upload.pdf' if file_extension == '.pdf' else 'upload.docx'
-        file_path = os.path.join(files_dir, static_file_name)
-        file.save(file_path)
-
-        # Convert DOCX to PDF if it's a DOCX file
-        if file_extension == '.docx':
-            # Convert the DOCX to PDF
-            convert_to_pdf(file_path)
-
-        # Return the static file path (relative or absolute as needed)
-        pdf_url = "static/files/upload.pdf"
-        return jsonify({'file_url': pdf_url}), 200
-
-    return jsonify({'error': f"Unsupported file type: {file_extension}"}), 400
-
-
-@app.route('/', methods=['GET', 'POST'])
-def process():
+@index_bp.route('/', methods=['GET', 'POST'])
+def upload():
     form = PDFUploadForm()
 
     if request.method == 'POST' and form.validate_on_submit():
         UPLOAD_PROGRESS['progress'] = 0  # Reset progress
 
-        file_path = "app/static/files/upload.pdf"
+        # Get the uploaded PDF file
+        pdf_file = request.files['pdf_file']
+
+        # Ensure the /files directory exists
+        files_dir = os.path.join(os.path.dirname(__file__), 'files')
+        if not os.path.exists(files_dir):
+            os.makedirs(files_dir)
+
+        # Save the uploaded PDF file to the /files directory
+        pdf_file_path = os.path.join(files_dir, pdf_file.filename)
+        pdf_file.save(pdf_file_path)
 
         # Start the background thread for processing
-        thread = threading.Thread(target=process_pdf, args=(file_path,))
+        thread = threading.Thread(target=process_pdf, args=(pdf_file_path,))
         thread.start()
 
         return render_template('processing.html')  # Render a template that shows the progress bar
 
     return render_template('upload.html', form=form)
 
-@app.route('/progress', methods=['GET'])
+@index_bp.route('/progress', methods=['GET'])
 def get_progress():
     return jsonify(UPLOAD_PROGRESS)
 
-@app.route('/choose-template', methods=['GET', 'POST'])
+@index_bp.route('/choose-template', methods=['GET', 'POST'])
 def choose_template():
     if request.method == 'POST':
         # Get the selected option from the form
@@ -123,7 +97,7 @@ TOTAL_PAGES = None
 page_text_boxes = None
 template = None
 
-@app.route('/display')
+@index_bp.route('/display')
 def display():
     global TOTAL_PAGES, page_text_boxes, all_groups, mapping, template
 
@@ -152,7 +126,7 @@ def display():
         selected_template=int(template)
     )
 
-@app.route('/submit', methods=['POST'])
+@index_bp.route('/submit', methods=['POST'])
 def submit():
     # Get the current page from the form (ensure it's valid)
     page = int(request.form.get('page', 1))
@@ -175,7 +149,7 @@ def submit():
     # Redirect back to the same page
     return redirect(f"/display?page={page}")
 
-@app.route('/download-pdf')
+@index_bp.route('/download-pdf')
 def download_pdf():
     pdf_path = "static/pdf/output.pdf"  # Update this to match your PDF file's location
     return send_file(pdf_path, as_attachment=True, download_name="output.pdf")

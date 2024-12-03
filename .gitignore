@@ -1,5 +1,7 @@
 .env
 embeddings.csv
+**/processed/scraped.csv
+**/text/output.txt
 
 # Byte-compiled / optimized / DLL files
 **/__pycache__/
@@ -166,14 +168,3 @@ cython_debug/
 
 # Node modules
 node_modules/
-
-# macOS system files
-**/.DS_Store
-
-app/files/*
-app/static/images/*
-app/static/pdf/*
-app/static/text/*
-app/static/pdf2image/*
-
-translation_history.txt
