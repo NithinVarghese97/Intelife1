@@ -4,7 +4,7 @@
 <div class="min-h-screen flex items-center justify-center bg-gray-100">
     <form 
         id="uploadForm"
-        action="{{ url_for('index.upload') }}" 
+        action="{{ url_for('index.process') }}" 
         method="post" 
         enctype="multipart/form-data" 
         class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md space-y-4"
@@ -13,8 +13,8 @@
 
         <!-- File Input -->
         <div>
-            <label for="pdfInput" class="block text-md text-center font-medium text-gray-700 mb-2">Upload PDF</label>
-            {{ form.pdf_file(class_="block w-full text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400", id="pdfInput", accept="application/pdf") }}
+            <label for="pdfInput" class="block text-md text-center font-medium text-gray-700 mb-2">Upload File</label>
+            {{ form.pdf_file(class_="block w-full text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400", id="pdfInput", accept=".pdf,.docx") }}
             
             {% for error in form.pdf_file.errors %}
             <div class="text-sm text-red-500 mt-1">{{ error }}</div>
@@ -37,27 +37,42 @@
     </form>
 
     <script>
-        document.getElementById('pdfInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file && file.type === "application/pdf") {
-                const fileURL = URL.createObjectURL(file);
-                // Store the PDF URL in sessionStorage
-                sessionStorage.setItem('pdfFileURL', fileURL);
-    
-                // Display the PDF in the upload page
-                document.getElementById('pdfDisplay').style.cssText = "width: 100%; height: 500px; border: 1px solid #ccc;";
-                document.getElementById('pdfDisplay').innerHTML = `
+        document.getElementById('pdfInput').addEventListener('change', async function(event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+            alert("Please select a file!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('pdf_file', file);
+
+        try {
+            const response = await fetch('{{ url_for("index.upload_file") }}', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json(); // Parse JSON response
+            if (response.ok) {
+                const fileUrl = data.file_url;
+                // Render the file dynamically in an iframe
+                const pdfDisplay = document.getElementById('pdfDisplay');
+                pdfDisplay.innerHTML = `
                     <iframe 
-                        src="${fileURL}#toolbar=0" 
+                        src="${fileUrl}#toolbar=0" 
                         width="100%" 
-                        height="100%" 
+                        height="500px" 
                         style="border: none;">
                     </iframe>
                 `;
-            } else {
-                alert("Please upload a valid PDF file.");
-            }
-        });
+            } 
+        } catch (error) {
+            console.error("Error:", error);
+            alert("An error occurred while uploading or converting the file.");
+        }
+    });
     </script>
 </div>
 {% endblock %}
