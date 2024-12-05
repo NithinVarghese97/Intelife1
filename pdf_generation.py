@@ -42,18 +42,14 @@ def replace_pdf_text(input_pdf_path, output_pdf_path, body_text_locations, new_t
     doc.save(output_pdf_path)
     doc.close()
 
-# Image and font size for footer and header
-LOGO_SIZE = (50,25) 
-FONT_NAME = "helv"
-HEADER_FONT_SIZE = 10
-
 # Image and font size for Body(14 for Easy Read)
 IMAGE_SIZE = (100,100)
 BODY_FONT_SIZE = 14
+FONT_NAME = "helv"
 
-# Margin for header/footer and margins of the sides of document
-MARGIN_TOP = 25
-MARGIN_BOTTOM = 25
+# Allowed space for header/footer and margins of the sides of document
+MARGIN_TOP = 50
+MARGIN_BOTTOM = 50
 MARGIN_SIDES = 40
 MINIMUM_VERTICAL_MARGIN = 10
 
@@ -61,38 +57,6 @@ def measure_text_width(text, font_size):
     font = fitz.Font(FONT_NAME)
     text_width = font.text_length(text,font_size)
     return text_width
-
-
-def add_header_footer(page, header_image, header_text, footer_image, footer_text):
-    # Adding header image and text
-    page.insert_image(fitz.Rect(MARGIN_SIDES, MARGIN_TOP - LOGO_SIZE[1], 
-                                MARGIN_SIDES + LOGO_SIZE[0], MARGIN_TOP),
-                      filename=header_image)
-    page.insert_text((MARGIN_SIDES + LOGO_SIZE[0] + 10, MARGIN_TOP-8), 
-                     header_text, fontname=FONT_NAME, fontsize=HEADER_FONT_SIZE)
-    # Draw line below header
-    page.draw_line(
-        p1=(MARGIN_SIDES, MARGIN_TOP),
-        p2=(page.rect.width - MARGIN_SIDES, MARGIN_TOP)
-    )
-
-    # Adding footer image on the right and text to the left of it
-    page_height = page.rect.height
-    footer_image_rect = fitz.Rect(page.rect.width - MARGIN_SIDES - LOGO_SIZE[0], 
-                                  page_height - MARGIN_BOTTOM, 
-                                  page.rect.width - MARGIN_SIDES, 
-                                  page_height - MARGIN_BOTTOM + LOGO_SIZE[1])
-    page.insert_image(footer_image_rect, filename=footer_image)
-    
-    # Position footer text to the left of the footer image
-    footer_text_x = footer_image_rect.x0 - 10 - measure_text_width(footer_text, HEADER_FONT_SIZE)
-    page.insert_text((footer_text_x, page_height - 10), 
-                     footer_text, fontname=FONT_NAME, fontsize=HEADER_FONT_SIZE)
-    page.draw_line(
-        p1=(MARGIN_SIDES, page_height - MARGIN_BOTTOM),
-        p2=(page.rect.width - MARGIN_SIDES, page_height - MARGIN_BOTTOM)
-    )
-
 
 def calculate_group_height(page, group_text):
     """
@@ -176,7 +140,7 @@ def add_groups(page, groups, num_groups, max_height):
     n = min(n, num_groups)
     vertical_margin = (max_height - total_group_height) / n
 
-    y_position = MARGIN_TOP + LOGO_SIZE[1] + 10
+    y_position = MARGIN_TOP
 
     for i in range(n):
         if i >= len(groups):
@@ -203,27 +167,36 @@ def add_groups(page, groups, num_groups, max_height):
             color=(0, 0, 0),
             overlay=True
         )
-        page.draw_line(
-        p1=(MARGIN_SIDES, MARGIN_TOP),
-        p2=(page.rect.width - MARGIN_SIDES, MARGIN_TOP)
-        )
         y_position += group_height + vertical_margin
     # Return number of groups added
     return n
 
 # Generate PDF based on specified group count per page
-def generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, groups_per_page):
+def generate_pdf(output_path, template_pdf, all_groups, groups_per_page):
+    try:
+        # Try opening the template PDF
+        template_pdf = fitz.open(template_pdf)
+        # Get the first page of the template
+        template_page = template_pdf[0]
+        page_width, page_height = template_page.rect.width, template_page.rect.height
+    except Exception as e:
+        # If the template can't be opened, define a default page size
+        print(f"Warning: Could not open template PDF. Using default page size. Error: {e}")
+        page_width, page_height = 595, 842  # Default size: A4 (in points, 72 points per inch)
+
     doc = fitz.open()
     i = 0
-    
-    while i < len(all_groups):
-        page = doc.new_page()
-        # Add header and footer
-        add_header_footer(page, header_image, header_text, footer_image, footer_text)
 
-        # Adds the maximum possible number of groups (up to `groups_per_page`) that can fit in the available space. 
-        max_height = page.rect.height - MARGIN_TOP - MARGIN_BOTTOM - 2*LOGO_SIZE[1] - MINIMUM_VERTICAL_MARGIN * (groups_per_page - 1)
-        n = add_groups(page, all_groups[i:i + groups_per_page], groups_per_page, max_height)
+    while i < len(all_groups):
+        new_page = doc.new_page(width=page_width, height=page_height)
+        
+        if 'template_page' in locals():
+            # If the template was loaded, copy its content
+            new_page.show_pdf_page(new_page.rect, template_pdf, 0)
+
+        # Add the maximum possible number of groups (up to `groups_per_page`) that can fit in the available space.
+        max_height = page_height - MARGIN_TOP - MARGIN_BOTTOM - MINIMUM_VERTICAL_MARGIN * (groups_per_page - 1)
+        n = add_groups(new_page, all_groups[i:i + groups_per_page], groups_per_page, max_height)
 
         # Advance the group index by the number of groups placed on this page
         i += n
@@ -237,24 +210,9 @@ def generate_pdf(output_path, header_image, header_text, footer_image, footer_te
     doc.save(output_path)
     doc.close()
 
-
-
-## ALL CODE BELOW IS JUST A TEST WITH EXAMPLE.
-output_path = "app/static/pdf/output.pdf"
-
-# Define header and footer information
-header_image = "app/static/test_images/logo.png"  # Replace with actual image path
-header_text = "Header: Sample PDF Document"
-footer_image = "app/static/test_images/logo.png"  # Replace with actual image path
-footer_text = "Footer: Page Information"
-
-
-# Specify the number of groups per page
-# Different templates would be different groups_per_page.
-groups_per_page = 4
-
 # Constants for PDF processing
 PDF_PATH = "app/static/pdf/output.pdf"
+TEMPLATE_PATH = "app/static/templates/template.pdf"
 OUTPUT_DIR = "app/static/pdf2image"
 
 def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]], template: int = 3):
@@ -263,9 +221,9 @@ def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]], templat
         all_groups.append([image_paths[i][1], text[i]])
         
     # Generate the PDF with the sample data
-    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, all_groups, template)
-    generate_all_images(output_path, OUTPUT_DIR)
-    TOTAL_PAGES = get_page_count(output_path)
+    generate_pdf(PDF_PATH, TEMPLATE_PATH, all_groups, template)
+    generate_all_images(PDF_PATH, OUTPUT_DIR)
+    TOTAL_PAGES = get_page_count(PDF_PATH)
     page_text_boxes = populate_text_boxes(TOTAL_PAGES, text, template)
     
     # Create a mapping between `page_text_boxes` and `all_groups`
@@ -283,9 +241,9 @@ def compile_info_for_pdf(text: list, image_paths: list[tuple[str, str]], templat
     return TOTAL_PAGES, page_text_boxes, all_groups, mapping
         
 def caller(text, template):
-    generate_pdf(output_path, header_image, header_text, footer_image, footer_text, text, template)
-    generate_all_images(output_path, OUTPUT_DIR)
-    TOTAL_PAGES = get_page_count(output_path)
+    generate_pdf(PDF_PATH, TEMPLATE_PATH, text, template)
+    generate_all_images(PDF_PATH, OUTPUT_DIR)
+    TOTAL_PAGES = get_page_count(PDF_PATH)
     
     temp = []
     for i in text:
@@ -342,9 +300,8 @@ def generate_all_images(pdf_path, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # Convert all pages of the PDF into images
-    images = convert_from_path(pdf_path, dpi=200)
-    for i, image in enumerate(images, start=1):
+    doc = fitz.open(pdf_path)  # open document
+    for i, page in enumerate(doc):
+        pix = page.get_pixmap(dpi = 200)  # render page to an image
         output_path = os.path.join(output_dir, f"pdf_page_{i}.jpg")
-        image.save(output_path, "JPEG")
-        print(f"Saved: {output_path}")
+        pix.save(output_path)    
