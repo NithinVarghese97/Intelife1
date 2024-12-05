@@ -4,6 +4,7 @@ from app.forms import PDFUploadForm
 from app.converter import convert
 from generate_images import generate_images_from_prompts
 from pdf_generation import compile_info_for_pdf, update_text, caller
+from word_generation import create_docx
 
 import os
 import time
@@ -12,7 +13,7 @@ import threading
 UPLOAD_PROGRESS = {"progress": 0}
 
 def process_pdf(pdf_file_path):
-    global UPLOAD_PROGRESS, results, generated_images
+    global UPLOAD_PROGRESS, results, generated_images, docx_results
 
     # Simulate progress updates
     UPLOAD_PROGRESS['progress'] = 10
@@ -38,7 +39,7 @@ def process_pdf(pdf_file_path):
         UPLOAD_PROGRESS['progress'] = int(round(progress_start + (current_image * progress_increment)))
 
     # Generate images using the results as prompts
-    generated_images = generate_images_from_prompts(results, progress_callback)
+    generated_images, docx_results = generate_images_from_prompts(results, progress_callback)
 
     UPLOAD_PROGRESS['progress'] = 80
     time.sleep(1)  # Simulate processing time
@@ -79,15 +80,71 @@ def upload():
 def get_progress():
     return jsonify(UPLOAD_PROGRESS)
 
+@app.route('/upload-template', methods=['GET', 'POST'])
+def upload_template():
+    if request.method == 'POST':
+        # Get the selected conversion option
+        conversion_option = request.form.get('conversion_option')
+        print(f"DEBUG: Conversion option received: {conversion_option}")  # Debug statement
+        
+        global filetype, temp_file_path
+        temp_file_path = None
+        file_path = None
+        
+        # Handle file upload if a file was uploaded
+        uploaded_file = request.files.get('docx_file')
+        if uploaded_file:
+            # Determine the file type
+            file_extension = uploaded_file.filename.split('.')[-1].lower()
+
+            if file_extension == 'docx':
+                conversion_option = 'DOCX'
+            elif file_extension == 'pdf':
+                conversion_option = 'PDF'
+            else:
+                return "Unsupported file type. Only DOCX and PDF are allowed.", 400
+
+            # Save the uploaded file
+            file_path = f'app/static/uploads/{uploaded_file.filename}'
+            uploaded_file.save(file_path)
+        
+        # Handle the case where no file is uploaded but an option is selected 
+        if conversion_option == 'DOCX':
+            filetype = 'DOCX'
+            temp_file_path = file_path
+            
+        else:
+            filetype = 'PDF'
+            temp_file_path = file_path
+            
+        return redirect('/choose-template')
+    
+    return render_template('upload_template.html')
+
 @app.route('/choose-template', methods=['GET', 'POST'])
 def choose_template():
     if request.method == 'POST':
         # Get the selected option from the form
         selected_option = request.form.get('option', '3')  # Default to 3 if no selection
+        
+        if filetype == 'DOCX':
+            global docx_boxes
+            docx_boxes = int(selected_option)
+            return redirect('/docx')
+        
         return redirect(f'/display?template={selected_option}')
 
     return render_template('templates.html')
 
+@app.route('/docx')
+def docx():
+    print("RESULTS:", docx_results)
+    print("BOXES:", docx_boxes)
+    output_file = f'app/static/docx/output.docx'
+    create_docx(output_file, docx_results, docx_boxes, temp_file_path)
+    
+    return render_template('docx.html')
+    
 
 TOTAL_PAGES = None
 page_text_boxes = None
@@ -104,9 +161,9 @@ def display():
     
     # Check if TOTAL_PAGES and page_text_boxes are already set
     if TOTAL_PAGES is None or page_text_boxes is None:
-        TOTAL_PAGES, page_text_boxes, all_groups, mapping = compile_info_for_pdf(results, generated_images, template)
+        TOTAL_PAGES, page_text_boxes, all_groups, mapping = compile_info_for_pdf(results, generated_images, template, temp_file_path)
     else:
-        TOTAL_PAGES, page_text_boxes = caller(all_groups, template)
+        TOTAL_PAGES, page_text_boxes = caller(all_groups, template, temp_file_path)
 
     # Get the current page from the query parameters (default to 1)
     page = int(request.args.get('page', 1))

@@ -12,7 +12,7 @@
         <div class="left">
             <div class="pdf-container">
                 <!-- Dynamically display the correct image based on current_page -->
-                <img id="pdfImage" src="static/pdf2image/pdf_page_{{ current_page }}.jpg" alt="PDF Page">
+                <img id="pdfImage" src="static/pdf2image/pdf_page_{{ current_page-1 }}.jpg" alt="PDF Page">
                 <div class="navigation">
                     <div class="navigation">
                         <button id="prevButton" onclick="navigatePage(-1)" {% if current_page == 1 %}disabled{% endif %}>←</button>
