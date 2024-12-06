@@ -12,7 +12,7 @@ def split_into_sentences(text):
 def summarise(pdf_path):
     extracted_text = extract(pdf_path)
     preprocessed_text = preprocess(extracted_text)
-    grouped_paragraphs, coherence = cluster_sentences(preprocessed_text)
+    grouped_paragraphs = cluster_sentences(preprocessed_text)
     array_2d = [split_into_sentences(translate(" ".join(group))) for group in grouped_paragraphs]
     ai_summary = [item for sublist in array_2d for item in sublist]
     

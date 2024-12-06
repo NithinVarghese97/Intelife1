@@ -86,7 +86,7 @@ def cluster_sentences(sentences, config={}):
         hdbscan_model=hdbscan_model,
         vectorizer_model=vectorizer_model,
         representation_model=representation_model,
-        nr_topics=config.get('nr_topics', 20),
+        nr_topics=config.get('nr_topics', 10),
     )
 
     topics, probs = topic_model.fit_transform(sentences, embeddings)
@@ -110,9 +110,9 @@ def cluster_sentences(sentences, config={}):
     groups = {k: v for k, v in groups.items() if k != -1}
     
     result = list(groups.values())
-    coherence = calculate_coherence_score(sentences, groups, topic_model)
+    # coherence = calculate_coherence_score(sentences, groups, topic_model)
     
-    return result, coherence
+    return result
 
 def calculate_coherence_score(sentences, groups, topic_model):
     """
