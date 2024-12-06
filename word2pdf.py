@@ -2,7 +2,6 @@ import platform
 import subprocess
 from pathlib import Path
 from docx2pdf import convert
-import pythoncom
 
 def grant_mac_permissions(file_path):
     """Grant permissions for macOS by removing the quarantine attribute if it exists."""
@@ -22,6 +21,7 @@ def convert_to_pdf(input_path):
     try:
         input_path = Path(input_path).resolve()
         if platform.system() == "Windows":
+            import pythoncom
             grant_windows_permissions(input_path)
             pythoncom.CoInitialize()
             convert(input_path)

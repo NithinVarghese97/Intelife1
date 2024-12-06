@@ -1,7 +1,6 @@
 from context_generation import extract, preprocess
 from context_clustering import cluster_sentences
 from translation import translate
-from pdf_generation import replace_pdf_text
 import os
 
 
