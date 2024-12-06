@@ -1,12 +1,9 @@
 import pymupdf4llm
 import re
+import os
+abs_pth = os.path.abspath('.')
+os.environ['NLTK_DATA'] = os.path.join(abs_pth, 'nltk_data')
 import nltk
-
-# Download the Punkt tokenizer for sentence tokenization if not already downloaded
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
 
 # Resources:
 # https://pymupdf.readthedocs.io/en/latest/pymupdf4llm/
