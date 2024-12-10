@@ -1,8 +1,0 @@
-.env
-embeddings.csv
-processed/scraped.csv
-text/output.txt
-training_data.jsonl
-validation_data.jsonl
-myenv
-nltk_data
