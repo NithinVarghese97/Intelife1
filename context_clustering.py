@@ -100,11 +100,14 @@ def cluster_sentences(sentences, config={}):
     for i, sentence in enumerate(sentences):
         groups[topics[i]] = groups[topics[i]] + [sentence]
     
-    # If there is only one group, it's the whole document. Otherwise, remove the noise group.
+    # If there is only one group, it's the whole document
     if len(groups) == 1:
-        groups = {0: sentences}
-    else:
-        groups = {k: v for k, v in groups.items() if k != -1}
+        result = list(groups.values())
+        coherence = calculate_coherence_score(sentences, groups, topic_model)
+        return result, coherence
+    
+    # Remove outliers
+    groups = {k: v for k, v in groups.items() if k != -1}
     
     result = list(groups.values())
     # coherence = calculate_coherence_score(sentences, groups, topic_model)
