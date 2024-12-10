@@ -1,21 +1,20 @@
 import pandas as pd
 import numpy as np
 from ast import literal_eval
-import pandas as pd
 from scipy.spatial.distance import cosine
 import tiktoken
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from fine_tune import fine_tune
-import json
+from tqdm import tqdm
+from typing import List, Tuple, Dict, Any, Optional
 
 
 load_dotenv()
 api_key = os.getenv('API_KEY')
 client = OpenAI(api_key=api_key)
 
-# Function to split the text into chunks of a maximum number of tokens
+
 def split_into_many(tokenizer, text, max_tokens):
     sentences = text.split('. ')
     n_tokens = [len(tokenizer.encode(" " + sentence)) for sentence in sentences]
@@ -38,9 +37,9 @@ def split_into_many(tokenizer, text, max_tokens):
 
 def get_embedding(text, model="text-embedding-ada-002"):
     text = text.replace("\n", " ")
-    return client.embeddings.create(input = [text], model=model).data[0].embedding
+    return client.embeddings.create(input=[text], model=model).data[0].embedding
 
-# Define functions for responses
+
 def create_context(input, df, max_len=1800, size="ada"):
     q_embeddings = get_embedding(input)
     df["distances"] = df["embeddings"].apply(lambda x: cosine(q_embeddings, x))
@@ -54,44 +53,59 @@ def create_context(input, df, max_len=1800, size="ada"):
     return "\n\n###\n\n".join(returns)
 
 
-def conversion(df, model="gpt-3.5-turbo", input="", condition_prompt='', max_len=1800, size="ada", debug=False, max_tokens=100, stop_sequence=None):
-    context = create_context(input, df, max_len=max_len, size=size)
-    
-    with open('prompts.jsonl', 'r') as file:
-        data = json.load(file)
+def get_refinement_criteria() -> str:
+    return """Please evaluate the translation based on the following criteria:
+    1. Clarity: Is the easy-read translation clear and really simple to understand?
+    2. Accuracy: Does it maintain the original meaning while being simpler?
+    3. Readability: Is it structured in a way that's easy to follow?
+    4. Consistency: Is the simplification level consistent throughout?
+    5. Intraclass separation: Although each sentence in the translation have the same background meaning, do
+    they still have enough separation between them so that each sentence can repersent a (trivial) sub-concept?
+    6. Length: Each sub-concept must only have one corresponding sentence and the sub-concept themselves must be important enough to be included. Is the number of sentences too many and can be reduced?
+    7. Format: Is the resulting translation in plain sentences that are period seprated and in one paragraph only (no dot points, no colon, etc)?
 
-    # Create the messages list
-    system_prompt=f"You are a translator, your role is to translate the input text into easy read format based on BOTH the user input and the context below\nContext: {context}\nAdditional instruction: {condition_prompt}"
-    messages = [{"role": "system", "content": system_prompt}]
+    For each criterion, provide:
+    - A score (1-5)
+    - Specific issues identified
+    - Suggested improvements
 
-    # for conversation in data["conversations"]:
-        # messages.append({"role": "user", "content": conversation["user"]})
-        # messages.append({"role": "assistant", "content": conversation["assistant"]})
+    Then, provide an improved version of the translation that addresses these issues.
+    Ensure the improved version of the translation is wrapped in double quotes."""
 
-    messages.append({"role": "user", "content": input})
 
-    if debug:
-        print("Context:\n" + context)
-        print("\n\n")
+def refine_translation(client: OpenAI, current_text: str, original_input: str, context: str, 
+                        model: str = "gpt-4-turbo") -> Tuple[str, Dict[str, Any]]:
+    """Refine the given translation based on evaluation criteria."""
+    refinement_prompt = f"""Original Text: {original_input}
+
+    Current Translation:
+    {current_text}
+
+    Context from Similar Texts:
+    {context}
+
+    {get_refinement_criteria()}"""
 
     try:
         response = client.chat.completions.create(
-            messages=messages,
-            temperature=0,
-            max_tokens=max_tokens,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            stop=stop_sequence,
-            model=model
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are an expert in converting text to easy-read format while maintaining accuracy and clarity."},
+                {"role": "user", "content": refinement_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=2000
         )
-
-        return response.choices[0].message.content
+        
+        feedback = response.choices[0].message.content
+        improved_text = feedback.split("improved version")[-1].strip()
+        
+        return improved_text, {"full_feedback": feedback}
     
     except Exception as e:
-        print(e)
-        return ""
-    
+        print(f"Error in refinement: {str(e)}")
+        return current_text, {"error": str(e)}
+
 
 def remove_newlines(serie):
     serie = serie.str.replace('\n', ' ')
@@ -102,95 +116,163 @@ def remove_newlines(serie):
 
 
 def create_df():
-    # Create a list to store the text files
     texts = []
-
-    # Get all the text files in the text directory
-    for file in os.listdir("text/"):
-
-        # Open the file and read the text
-        with open("text/" + file, "r", encoding="UTF-8") as f:
+    for file in os.listdir("app/text/"):
+        with open("app/text/" + file, "r", encoding="UTF-8") as f:
             text = f.read()
-
-            # Omit the first 11 lines and the last 4 lines, then replace -, _, and #update with spaces.
             texts.append((file[11:-4].replace('-',' ').replace('_', ' ').replace('#update',''), text))
-
-    # Create a dataframe from the list of texts
-    df = pd.DataFrame(texts, columns = ['fname', 'text'])
-
-    # Set the text column to be the raw text with the newlines removed
+    
+    df = pd.DataFrame(texts, columns=['fname', 'text'])
     df['text'] = df.fname + ". " + remove_newlines(df.text)
-
+    
     if not os.path.exists("processed"):
         os.mkdir("processed")
-
+    
     df.to_csv('processed/scraped.csv')
+    return df
 
 
-def Wrapper(input, condition_prompt, model_id=None):
-    model = None
-    if model_id == None:
-        model = fine_tune('training_data.jsonl', 'validation_data.jsonl')
-    else:
-        model = model_id
+def convert_string_to_array(embedding_string):
+    """Convert string representation of embedding to numpy array."""
+    try:
+        # Remove any trailing commas and cleanup the string
+        clean_string = embedding_string.strip('[]').strip()
+        if clean_string.endswith(','):
+            clean_string = clean_string[:-1]
+        # Convert to list of floats
+        return np.array([float(x.strip()) for x in clean_string.split(',')])
+    except Exception as e:
+        print(f"Error converting embedding: {e}")
+        return np.array([])
 
-    # Load tokenizer
+
+def prepare_embeddings_df():
+    """Prepare and return DataFrame with embeddings."""
+    if os.path.exists('embeddings.csv'):
+        df = pd.read_csv('embeddings.csv', index_col=0)
+        if 'embeddings' in df.columns:
+            # Safely convert string embeddings to numpy arrays
+            df['embeddings'] = df['embeddings'].apply(convert_string_to_array)
+        return df
+    
+    # If embeddings.csv doesn't exist, create it
     tokenizer = tiktoken.get_encoding("cl100k_base")
-
-    # Read data from the CSV file into a DataFrame
-    create_df()
-    df = pd.read_csv('processed/scraped.csv', index_col=0)
+    df = create_df()
     df.columns = ['title', 'text']
-
-    # Check if any text column exists in the DataFrame
-    text_columns = [col for col in df.columns if df[col].dtype == 'object']
-    if len(text_columns) == 0:
-        print("No text column found in the DataFrame. Exiting.")
-        exit()
-
-    # Concatenate all text columns into a single 'text' column
-    df['text'] = df[text_columns].apply(lambda row: ' '.join(row.dropna()), axis=1)
-
-    # Tokenize the text and save the number of tokens to a new column
+    
+    # Process text and create embeddings
     df['n_tokens'] = df['text'].apply(lambda x: len(tokenizer.encode(x)))
-
-    # Visualize the distribution of the number of tokens per row using a histogram
-    # df['n_tokens'].hist()
-
-    # Set max_tokens
-    max_tokens = 500
-
+    max_tokens = 1000
+    
     shortened = []
-
-    # Loop through the dataframe
     for row in df.iterrows():
-
-        # If the text is None, go to the next row
         if row[1]['text'] is None:
             continue
-
-        # If the number of tokens is greater than the max number of tokens, split the text into chunks
         if row[1]['n_tokens'] > max_tokens:
             shortened += split_into_many(tokenizer, row[1]['text'], max_tokens)
-
-        # Otherwise, add the text to the list of shortened texts
         else:
-            shortened.append( row[1]['text'] )
-
-    # Create DataFrame from shortened texts
+            shortened.append(row[1]['text'])
+    
     df = pd.DataFrame(shortened, columns=['text'])
     df['n_tokens'] = df.text.apply(lambda x: len(tokenizer.encode(x)))
-    # df['n_tokens'].hist()
-
     df['embeddings'] = df.text.apply(lambda x: get_embedding(x))
-
-    # Save embeddings to CSV
+    
+    # Save embeddings as JSON strings to preserve format
     df.to_csv('embeddings.csv')
-    df.head()
+    return df
 
-    # Read embeddings from CSV
-    df = pd.read_csv('embeddings.csv', index_col=0)
-    df['embeddings'] = df['embeddings'].apply(literal_eval).apply(np.array)
-    df.head()
 
-    return conversion(df, model, input, condition_prompt, debug=False)
+def iterative_translation(input_text: str, n_iterations: int = 3, 
+                         model: str = "gpt-4-turbo") -> List[Tuple[str, Dict[str, Any]]]:
+    # Prepare embeddings DataFrame
+    df = prepare_embeddings_df() if not os.path.exists('embeddings.csv') else pd.read_csv('embeddings.csv', index_col=0)
+    if 'embeddings' in df.columns:
+        df['embeddings'] = df['embeddings'].apply(literal_eval).apply(np.array)
+    
+    # Get context for the translation
+    context = create_context(input_text, df)
+
+    input_text = "User input: " + input_text + "\nContext: {context}"
+    
+    # Initial translation
+    system_prompt = f"You are a translator, your role is to translate the user input text into easy read format based on BOTH the user input and the context."
+    
+    try:
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": input_text}
+            ],
+            temperature=0,
+            max_tokens=2000,
+            model=model
+        )
+        current_text = response.choices[0].message.content
+    except Exception as e:
+        print(f"Error in initial translation: {str(e)}")
+        return []
+    
+    results = [(current_text, {"stage": "initial"})]
+    
+    # Refinement loop
+    for i in tqdm(range(n_iterations), desc="Refining translation"):
+        try:
+            refined_text, feedback = refine_translation(
+                client=client,
+                current_text=current_text,
+                original_input=input_text,
+                context=context,
+                model=model
+            )
+            
+            results.append((refined_text, {
+                "stage": f"refinement_{i+1}",
+                "feedback": feedback
+            }))
+            current_text = refined_text
+            
+        except Exception as e:
+            print(f"Error in iteration {i+1}: {str(e)}")
+            break
+    
+    return results
+
+
+def save_refinement_history(results: List[Tuple[str, Dict[str, Any]]], filename: str = "translation_history.txt") -> Optional[str]:
+    last_quoted_line = None
+    
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write("=== Translation Refinement History ===\n\n")
+        for i, (text, metadata) in enumerate(results):
+            f.write(f"\n--- Stage: {metadata['stage']} ---\n")
+            
+            # Check each line in the text for quotes
+            for line in text.split('\n'):
+                line = line.strip()
+                if line.startswith('"') and line.endswith('"'):
+                    last_quoted_line = line
+            
+            f.write(text + "\n")
+            
+            if i > 0 and "feedback" in metadata:
+                f.write("\nFeedback from previous version:\n")
+                feedback = metadata["feedback"]["full_feedback"]
+                f.write(feedback + "\n")
+                
+                # Also check feedback for quoted lines
+                for line in feedback.split('\n'):
+                    line = line.strip()
+                    if line.startswith('"') and line.endswith('"'):
+                        last_quoted_line = line
+            
+            f.write("\n" + "="*50 + "\n")
+    
+    return last_quoted_line
+
+
+def translate(input_text):
+    # Run iterative translation
+    results = iterative_translation(input_text, n_iterations=3)
+    opt = save_refinement_history(results)
+
+    return opt
