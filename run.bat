@@ -1,14 +1,4 @@
 @echo off
-:: Check for administrative privileges
-NET SESSION >nul 2>&1
-if %errorLevel% == 0 (
-    echo Administrator privileges detected
-) else (
-    echo This script requires administrator privileges
-    echo Please run this script as administrator
-    pause
-    exit /b 1
-)
 
 :: Set the path to the PowerShell executable
 set POWERSHELL_PATH=%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe
