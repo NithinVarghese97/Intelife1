@@ -1,9 +1,9 @@
+import os
 from app import create_app
-import webbrowser
 
 app = create_app('config.Config')
 
 if __name__ == '__main__':
-    print("Launching web ui in browser")
-    webbrowser.open('http://localhost:5000')
-    app.run()
+    port = int(os.environ.get("PORT", 5000))  # Use Render's assigned PORT, default to 5000
+    print(f"Starting server on port {port}...")
+    app.run(host="0.0.0.0", port=port)
