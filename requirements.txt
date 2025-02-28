@@ -8,4 +8,5 @@ langchain_community
 langchain-openai
 chromadb
 flask-wtf
-pymupdf4llm==1.0.0
+pymupdf4llm
+
