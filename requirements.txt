@@ -10,4 +10,13 @@ chromadb
 flask-wtf
 pymupdf4llm==0.0.17
 nltk
+scikit-learn
+numpy
+scipy
+tqdm
+hdbscan
+umap-learn
+sentence-transformers
+bertopic
+
 
