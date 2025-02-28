@@ -7,3 +7,4 @@ python-dotenv
 langchain_community
 langchain-openai
 chromadb
+flask-wtf
