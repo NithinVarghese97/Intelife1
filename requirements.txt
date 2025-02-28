@@ -16,7 +16,7 @@ scipy
 tqdm
 hdbscan
 umap-learn
-sentence-transformers
+sentence-transformers==2.2.2
 bertopic
 
 
