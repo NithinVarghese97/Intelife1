@@ -16,7 +16,9 @@ scipy
 tqdm
 hdbscan
 umap-learn
-sentence-transformers==2.2.2
+sentence-transformers==2.2.2  # Pin stable version
+huggingface-hub==0.15.1       # Compatible version
 bertopic
+
 
 
